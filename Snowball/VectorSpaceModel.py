@@ -9,7 +9,7 @@ import codecs
 import re
 
 from gensim import corpora
-from nltk.tokenize.punkt import PunktWordTokenizer
+import nltk
 from gensim.models import TfidfModel
 
 
@@ -21,12 +21,12 @@ class VectorSpaceModel(object):
         f_sentences = codecs.open(sentences_file, encoding='utf-8')
         documents = list()
         count = 0
-        print "Gathering sentences and removing stopwords"
+        print("Gathering sentences and removing stopwords")
         for line in f_sentences:
             line = re.sub('<[A-Z]+>[^<]+</[A-Z]+>', '', line)
 
             # remove stop words and tokenize
-            document = [word for word in PunktWordTokenizer().tokenize(line.lower()) if word not in stopwords]
+            document = [word for word in nltk.word_tokenize(line.lower()) if word not in stopwords]
             documents.append(document)
             count += 1
             if count % 10000 == 0:
@@ -38,5 +38,5 @@ class VectorSpaceModel(object):
         self.corpus = [self.dictionary.doc2bow(text) for text in documents]
         self.tf_idf_model = TfidfModel(self.corpus)
 
-        print len(documents), "documents red"
-        print len(self.dictionary), " unique tokens"
+        print(len(documents), "documents red")
+        print(len(self.dictionary), " unique tokens")
