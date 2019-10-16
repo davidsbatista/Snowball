@@ -9,8 +9,8 @@ import StringIO
 from nltk import pos_tag
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tag.mapping import map_tag
-from nltk.tokenize.punkt import PunktWordTokenizer
-from SentenceBreds import Sentence
+import nltk
+import Sentence
 
 
 class Reverb(object):
@@ -46,7 +46,7 @@ class Reverb(object):
         """
 
         # split text into tokens
-        text_tokens = PunktWordTokenizer().tokenize(text)
+        text_tokens = nltk.word_tokenize(text)
 
         # tag the sentence, using the default NTLK English tagger
         # POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/english.pickle'
@@ -201,7 +201,7 @@ class Reverb(object):
         # P = (prep | particle | inf. marker)
 
         # split text into tokens
-        text_tokens = PunktWordTokenizer().tokenize(text)
+        text_tokens = nltk.word_tokenize(text)
 
         # tag the sentence, using the default NTLK English tagger
         # POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/english.pickle'
@@ -314,14 +314,14 @@ def main():
             pattern_tags = reverb.extract_reverb_patterns_tagged_ptb(r.between)
             # simple passive voice
             # auxiliary verb be + main verb past participle + 'by'
-            print r.ent1, '\t', r.ent2
-            print r.sentence
-            print pattern_tags
+            print(r.ent1, '\t', r.ent2)
+            print(r.sentence)
+            print(pattern_tags)
             if reverb.detect_passive_voice(pattern_tags):
-                print "Passive Voice: True"
+                print("Passive Voice: True")
             else:
-                print "Passive Voice: False"
-            print "\n"
+                print("Passive Voice: False")
+            print("\n")
     fileinput.close()
 
 if __name__ == "__main__":
