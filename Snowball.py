@@ -5,7 +5,7 @@ from Snowball import Config, Pattern, Tuple
 __author__ = "David S. Batista"
 __email__ = "dsbatista@inesc-id.pt"
 
-import cPickle
+import pickle
 import sys
 import os
 import codecs
@@ -39,7 +39,7 @@ class Snowball(object):
             os.path.isfile("processed_tuples.pkl")
             f = open("processed_tuples.pkl", "r")
             print("\nLoading processed tuples from disk...")
-            self.processed_tuples = cPickle.load(f)
+            self.processed_tuples = pickle.load(f)
             f.close()
             print(len(self.processed_tuples), "tuples loaded")
 
@@ -67,14 +67,14 @@ class Snowball(object):
             print("\n", len(self.processed_tuples), "relationships generated")
             print("Dumping relationships to file")
             f = open("processed_tuples.pkl", "wb")
-            cPickle.dump(self.processed_tuples, f)
+            pickle.dump(self.processed_tuples, f)
             f.close()
 
     def init_bootstrapp(self, tuples):
         if tuples is not None:
             f = open(tuples, "r")
             print("Loading pre-processed sentences", tuples)
-            self.processed_tuples = cPickle.load(f)
+            self.processed_tuples = pickle.load(f)
             f.close()
             print(len(self.processed_tuples), "tuples loaded")
 

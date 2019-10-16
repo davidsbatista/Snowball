@@ -5,12 +5,12 @@ __author__ = "David S. Batista"
 __email__ = "dsbatista@inesc-id.pt"
 
 import fileinput
-import StringIO
+from io import StringIO
 from nltk import pos_tag
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tag.mapping import map_tag
 import nltk
-import Sentence
+from . Sentence import Sentence
 
 
 class Reverb(object):
