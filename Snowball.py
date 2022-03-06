@@ -214,9 +214,9 @@ class Snowball(object):
             f_output.write("instance: "+t.e1.encode("utf8")+'\t'+t.e2.encode("utf8")+'\tscore:'+str(t.confidence)+'\n')
             f_output.write("sentence: "+t.sentence.encode("utf8")+'\n')
             # writer patterns that extracted this tuple
-            patterns = set()
+            patterns = list()  
             for pattern in self.candidate_tuples[t]:
-                patterns.add(pattern[0])
+                patterns.append(pattern)  
             for p in patterns:
                 p.merge_tuple_patterns()
                 f_output.write("pattern_bet: " + ', '.join(p.tuple_patterns) + '\n')
