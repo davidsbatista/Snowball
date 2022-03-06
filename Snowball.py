@@ -17,6 +17,8 @@ from gensim.matutils import cossim
 
 from Snowball.Sentence import Sentence
 from Snowball.Seed import Seed
+from Snowball.Tuple import Tuple
+from Snowball.Pattern import Pattern
 
 
 PRINT_PATTERNS = False
