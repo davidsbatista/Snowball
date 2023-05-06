@@ -1,17 +1,12 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 __author__ = "David S. Batista"
 __email__ = "dsbatista@inesc-id.pt"
 
 import sys
-
 from copy import deepcopy
 from math import log
 
 
 class Pattern(object):
-
     def __init__(self, t=None):
         self.positive = 0
         self.negative = 0
@@ -29,9 +24,9 @@ class Pattern(object):
             self.centroid_aft = t.aft_vector
 
     def __str__(self):
-        output = ''
+        output = ""
         for t in self.tuples:
-            output += str(t)+'|'
+            output += str(t) + "|"
         return output
 
     def __eq__(self, other):
@@ -42,9 +37,9 @@ class Pattern(object):
 
     def update_confidence_2003(self, config):
         if self.positive > 0:
-            self.confidence = log(float(self.positive), 2) * (float(self.positive) / float(self.positive + self.unknown
-                                                                                           * config.wUnk + self.negative
-                                                                                           * config.wNeg))
+            self.confidence = log(float(self.positive), 2) * (
+                float(self.positive) / float(self.positive + self.unknown * config.wUnk + self.negative * config.wNeg)
+            )
         elif self.positive == 0:
             self.confidence = 0
 
@@ -70,11 +65,11 @@ class Pattern(object):
                             self.negative += 1
                 self.unknown += 1
 
-        #self.update_confidence()
+        # self.update_confidence()
         self.update_confidence_2003(config)
 
     def merge_tuple_patterns(self):
-        #fazer o merge tendo em consideração todos os contextos
+        # fazer o merge tendo em consideração todos os contextos
         for t in self.tuples:
             self.tuple_patterns.add(t.bet_words)
 

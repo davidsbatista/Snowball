@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from Snowball import Config, Pattern, Tuple
+from snowball import Config, Pattern, Tuple
 
 __author__ = "David S. Batista"
 __email__ = "dsbatista@inesc-id.pt"
@@ -15,8 +15,8 @@ from collections import defaultdict
 from nltk import word_tokenize
 from gensim.matutils import cossim
 
-from Snowball.Sentence import Sentence
-from Snowball.Seed import Seed
+from snowball.sentence import Sentence
+from snowball.seed import Seed
 
 
 PRINT_PATTERNS = False

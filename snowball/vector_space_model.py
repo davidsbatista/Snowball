@@ -4,26 +4,25 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@inesc-id.pt"
 
-import sys
 import codecs
 import re
+import sys
 
-from gensim import corpora
 import nltk
+from gensim import corpora
 from gensim.models import TfidfModel
 
 
 class VectorSpaceModel(object):
-
     def __init__(self, sentences_file, stopwords):
         self.dictionary = None
         self.corpus = None
-        f_sentences = codecs.open(sentences_file, encoding='utf-8')
+        f_sentences = codecs.open(sentences_file, encoding="utf-8")
         documents = list()
         count = 0
         print("Gathering sentences and removing stopwords")
         for line in f_sentences:
-            line = re.sub('<[A-Z]+>[^<]+</[A-Z]+>', '', line)
+            line = re.sub("<[A-Z]+>[^<]+</[A-Z]+>", "", line)
 
             # remove stop words and tokenize
             document = [word for word in nltk.word_tokenize(line.lower()) if word not in stopwords]
