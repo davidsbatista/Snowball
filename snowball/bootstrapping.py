@@ -82,7 +82,7 @@ class Snowball:
             print("\n=============================================")
             print("\nStarting iteration", i)
             print("\nLooking for seed matches of:")
-            for seed in self.config.seed_tuples:
+            for seed in self.config.positive_seeds:
                 print(f"{seed.ent1}\t{seed.ent2}")
 
             # Looks for sentences matching the seed instances
@@ -184,7 +184,7 @@ class Snowball:
                     for tpl in self.candidate_tuples.keys():
                         if tpl.confidence >= self.config.instance_confidence:
                             seed = Seed(tpl.ent1, tpl.ent2)
-                            self.config.seed_tuples.add(seed)
+                            self.config.positive_seeds.add(seed)
 
                 # increment the number of iterations
                 i += 1
@@ -273,7 +273,7 @@ class Snowball:
         matched_tuples = []
         count_matches = defaultdict(int)
         for tpl in self.processed_tuples:
-            for seed in self.config.seed_tuples:
+            for seed in self.config.positive_seeds:
                 if tpl.ent1 == seed.ent1 and tpl.ent2 == seed.ent2:
                     matched_tuples.append(tpl)
                     count_matches[(tpl.ent1, tpl.ent2)] += 1

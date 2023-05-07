@@ -66,14 +66,14 @@ class Pattern:
         """
         Update the selectivity of the pattern
         """
-        for seed in config.seed_tuples:
+        for seed in config.positive_seeds:
             if seed.ent1 == tpl.ent1 or seed.ent1.strip() == tpl.ent1.strip():
                 if seed.ent2 == tpl.ent2.strip() or seed.ent2.strip() == tpl.ent2.strip():
                     self.positive += 1
                 else:
                     self.negative += 1
             else:
-                for neg_seed in config.negative_seed_tuples:
+                for neg_seed in config.negative_seeds:
                     if neg_seed.ent1 == tpl.ent1 or neg_seed.ent1.strip() == tpl.ent1.strip():
                         if neg_seed.ent2 == tpl.ent2.strip() or neg_seed.ent2.strip() == tpl.ent2.strip():
                             self.negative += 1

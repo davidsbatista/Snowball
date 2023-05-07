@@ -3,30 +3,40 @@ __email__ = "dsbatista@gmail.com"
 
 import fileinput
 import pickle
+from typing import Any, Set
 
 from nltk.corpus import stopwords
 
 from snowball.reverb_breds import Reverb
 from snowball.seed import Seed
+from snowball.snowball_tuple import SnowballTuple
 from snowball.vector_space_model import VectorSpaceModel
 
 
 class Config:
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """
     Configuration class
     """
 
-    def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):  # noqa: C901
+    def __init__(  # noqa: C901
+        self,
+        config_file: str,
+        positive_seeds: str,
+        negative_seeds: str,
+        sentences_file: str,
+        similarity: float,
+        confidence: float,
+    ) -> None:  # noqa: C901
         # pylint: disable=too-many-arguments, too-many-statements, too-many-branches
-        self.seed_tuples = set()
-        self.negative_seed_tuples = set()
-        self.e1_type = None
-        self.e2_type = None
-        self.stopwords = stopwords.words("english")
-        self.threshold_similarity = similarity
-        self.instance_confidence = confidence
-        self.reverb = Reverb()
+        self.positive_seeds: Set[SnowballTuple] = set()
+        self.negative_seeds: Set[SnowballTuple] = set()
+        self.e1_type: str
+        self.e2_type: str
+        self.stopwords: Set[str] = set(stopwords.words("english"))
+        self.threshold_similarity: float = similarity
+        self.instance_confidence: float = confidence
+        self.reverb: "Reverb" = Reverb()
 
         for line in fileinput.input(config_file):
             if line.startswith("#") or len(line) == 1:
@@ -73,8 +83,8 @@ class Config:
 
         assert self.alpha + self.beta + self.gamma == 1
 
-        self.read_seeds(seeds_file)
-        self.read_negative_seeds(negative_seeds)
+        self.read_seeds(positive_seeds, self.positive_seeds)
+        self.read_seeds(negative_seeds, self.negative_seeds)
         fileinput.close()
 
         print("\nConfiguration parameters")
@@ -90,8 +100,8 @@ class Config:
         print("beta                 :", self.beta)
         print("gamma                :", self.gamma)
         print("")
-        print("positive seeds       :", len(self.seed_tuples))
-        print("negative seeds       :", len(self.negative_seed_tuples))
+        print("positive seeds       :", len(self.positive_seeds))
+        print("negative seeds       :", len(self.negative_seeds))
         print("negative seeds wNeg  :", self.w_neg)
         print("unknown seeds wUnk   :", self.w_unk)
         print("")
@@ -103,7 +113,7 @@ class Config:
         print("\n")
 
         try:
-            print("\nLoading tf-idf model from disk...")
+            print("\nLoading TF-IDF model from disk...")
             with open("vsm.pkl", "rb") as f_in:
                 self.vsm = pickle.load(f_in)
 
@@ -114,9 +124,9 @@ class Config:
             with open("vsm.pkl", "wb") as f_out:
                 pickle.dump(self.vsm, f_out)
 
-    def read_seeds(self, seeds_file):
+    def read_seeds(self, seeds_file: str, holder: Set[Any]) -> None:
         """
-        Read seeds from file
+        Reads the seeds file and adds the seeds to the holder.
         """
         for line in fileinput.input(seeds_file):
             if line.startswith("#") or len(line) == 1:
@@ -128,20 +138,5 @@ class Config:
             else:
                 ent1 = line.split(";")[0].strip()
                 ent2 = line.split(";")[1].strip()
-                self.seed_tuples.add(Seed(ent1, ent2))
-
-    def read_negative_seeds(self, negative_seeds):
-        """
-        Read negative seeds from file
-        """
-        for line in fileinput.input(negative_seeds):
-            if line.startswith("#") or len(line) == 1:
-                continue
-            if line.startswith("e1"):
-                self.e1_type = line.split(":")[1].strip()
-            elif line.startswith("e2"):
-                self.e2_type = line.split(":")[1].strip()
-            else:
-                ent1 = line.split(";")[0].strip()
-                ent2 = line.split(";")[1].strip()
-                self.negative_seed_tuples.add(Seed(ent1, ent2))
+                seed = Seed(ent1, ent2)
+                holder.add(seed)

@@ -17,7 +17,7 @@ class VectorSpaceModel:
     Vector Space Model class
     """
 
-    def __init__(self, sentences_file, stopwords):
+    def __init__(self, sentences_file: str, stopwords: set) -> None:
         self.dictionary = None
         self.corpus = None
 
