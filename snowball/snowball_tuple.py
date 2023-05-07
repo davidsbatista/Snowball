@@ -72,9 +72,9 @@ class SnowballTuple:
         """
         if context == "bef":
             return self.bef_vector
-        elif context == "bet":
+        if context == "bet":
             return self.bet_vector
-        elif context == "aft":
+        if context == "aft":
             return self.aft_vector
 
         print("Error, vector must be 'bef', 'bet' or 'aft'")
