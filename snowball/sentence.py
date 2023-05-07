@@ -1,17 +1,12 @@
 __author__ = "David S. Batista"
-__email__ = "dsbatista@inesc-id.pt"
+__email__ = "dsbatista@gmail.com"
 
 import re
 
 from nltk import word_tokenize
 
-# regex for simple tags, e.g.:
-# <PER>Bill Gates</PER>
-regex_simple = re.compile("<[A-Z]+>[^<]+</[A-Z]+>", re.U)
-
-# regex for wikipedia linked tags e.g.:
-# <PER url=http://en.wikipedia.org/wiki/Mark_Zuckerberg>Mark Elliot Zuckerberg</PER>
-regex_linked = re.compile("<[A-Z]+ url=[^>]+>[^<]+</[A-Z]+>", re.U)
+# regex to extract entities, e.g.: <PERSON>John Smith</PERSON>
+ent_regex = re.compile("<[A-Z]+>[^<]+</[A-Z]+>", re.U)
 
 
 class Relationship:
@@ -41,7 +36,7 @@ class Relationship:
         self.arg2type = _arg2type
 
         if _before is None and _between is None and _after is None and _sentence is not None:
-            matches = list(re.finditer(regex_linked, self.sentence))
+            matches = list(re.finditer(ent_regex, self.sentence))
 
             for match_idx in range(0, len(matches) - 1):
                 if match_idx == 0:
@@ -85,7 +80,7 @@ class Sentence:
         # pylint: disable=too-many-locals, too-many-arguments
         self.relationships = set()
         self.sentence = _sentence
-        matches = list(re.finditer(regex_simple, self.sentence))
+        matches = list(re.finditer(ent_regex, self.sentence))
 
         if len(matches) >= 2:
             for match_idx in range(0, len(matches) - 1):
@@ -112,8 +107,6 @@ class Sentence:
                 # is less than 'max_tokens' and greater than 'min_tokens'
                 number_bet_tokens = len(word_tokenize(between))
                 if not number_bet_tokens > max_tokens and not number_bet_tokens < min_tokens:
-                    # TODO: run code according to Config.tags_type
-                    # simple tags
                     ent1 = matches[match_idx].group()
                     ent2 = matches[match_idx + 1].group()
                     arg1match = re.match("<[A-Z]+>", ent1)
