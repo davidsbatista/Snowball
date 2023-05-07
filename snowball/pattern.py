@@ -53,15 +53,15 @@ class Pattern:
 
     def update_selectivity(self, t, config):
         for s in config.seed_tuples:
-            if s.e1 == t.e1 or s.e1.strip() == t.e1.strip():
-                if s.e2 == t.e2.strip() or s.e2.strip() == t.e2.strip():
+            if s.ent1 == t.ent1 or s.ent1.strip() == t.ent1.strip():
+                if s.ent2 == t.ent2.strip() or s.ent2.strip() == t.ent2.strip():
                     self.positive += 1
                 else:
                     self.negative += 1
             else:
                 for n in config.negative_seed_tuples:
-                    if n.e1 == t.e1 or n.e1.strip() == t.e1.strip():
-                        if n.e2 == t.e2.strip() or n.e2.strip() == t.e2.strip():
+                    if n.ent1 == t.ent1 or n.ent1.strip() == t.ent1.strip():
+                        if n.ent2 == t.ent2.strip() or n.ent2.strip() == t.ent2.strip():
                             self.negative += 1
                 self.unknown += 1
 

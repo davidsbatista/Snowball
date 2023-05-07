@@ -15,7 +15,7 @@ from snowball.config import Config
 from snowball.pattern import Pattern
 from snowball.seed import Seed
 from snowball.sentence import Sentence
-from snowball.tuple import Tuple
+from snowball.snowball_tuple import SnowballTuple
 
 PRINT_PATTERNS = False
 
@@ -62,7 +62,7 @@ class Snowball(object):
                         bet_tokens = word_tokenize(rel.between)
                         aft_tokens = word_tokenize(rel.after)
                         if not (bef_tokens == 0 and bet_tokens == 0 and aft_tokens == 0):
-                            t = Tuple(rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config)
+                            t = SnowballTuple(rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config)
                             self.processed_tuples.append(t)
             f_sentences.close()
 
@@ -89,9 +89,9 @@ class Snowball(object):
             print("\nStarting iteration", i)
             print("\nLooking for seed matches of:")
             for s in self.config.seed_tuples:
-                print(s.e1, "\t", s.e2)
+                print(s.ent1, "\t", s.ent2)
 
-            # Looks for sentences macthing the seed instances
+            # Looks for sentences matching the seed instances
             count_matches, matched_tuples = self.match_seeds_tuples(self)
 
             if len(matched_tuples) == 0:
@@ -201,7 +201,7 @@ class Snowball(object):
                     print("Adding tuples to seed with confidence =>" + str(self.config.instance_confidence))
                     for t in self.candidate_tuples.keys():
                         if t.confidence >= self.config.instance_confidence:
-                            seed = Seed(t.e1, t.e2)
+                            seed = Seed(t.ent1, t.ent2)
                             self.config.seed_tuples.add(seed)
 
                 # increment the number of iterations
@@ -211,7 +211,7 @@ class Snowball(object):
         f_output = open("relationships.txt", "w")
         tmp = sorted(self.candidate_tuples, key=lambda tpl: tpl.confidence, reverse=True)
         for t in tmp:
-            f_output.write("instance: " + t.e1 + "\t" + t.e2 + "\tscore:" + str(t.confidence) + "\n")
+            f_output.write("instance: " + t.ent1 + "\t" + t.ent2 + "\tscore:" + str(t.confidence) + "\n")
             f_output.write("sentence: " + t.sentence + "\n")
 
             # writer patterns that extracted this tuple
@@ -289,12 +289,12 @@ class Snowball(object):
         count_matches = dict()
         for t in self.processed_tuples:
             for s in self.config.seed_tuples:
-                if t.e1 == s.e1 and t.e2 == s.e2:
+                if t.ent1 == s.ent1 and t.ent2 == s.ent2:
                     matched_tuples.append(t)
                     try:
-                        count_matches[(t.e1, t.e2)] += 1
+                        count_matches[(t.ent1, t.ent2)] += 1
                     except KeyError:
-                        count_matches[(t.e1, t.e2)] = 1
+                        count_matches[(t.ent1, t.ent2)] = 1
 
         return count_matches, matched_tuples
 

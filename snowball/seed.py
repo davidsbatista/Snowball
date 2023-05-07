@@ -1,17 +1,14 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 __author__ = "David S. Batista"
-__email__ = "dsbatista@inesc-id.pt"
+__email__ = "dsbatista@gmail.com"
 
 
 class Seed(object):
     def __init__(self, _e1, _e2):
-        self.e1 = _e1
-        self.e2 = _e2
+        self.ent1 = _e1
+        self.ent2 = _e2
 
     def __hash__(self):
-        return hash(self.e1) ^ hash(self.e2)
+        return hash(self.ent1) ^ hash(self.ent2)
 
     def __eq__(self, other):
-        return self.e1 == other.e1 and self.e2 == other.e2
+        return self.ent1 == other.ent1 and self.ent2 == other.ent2
