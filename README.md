@@ -19,3 +19,70 @@ For more details about this particular implementation please refer to:
 A sample file containing sentences where the named-entities are already tagged can be [downloaded](http://data.davidsbatista.net/sentences.txt.bz2), which has 1 million sentences taken from the New York Times articles part of the English Gigaword Collection.
 
 **NOTE**: look at the desription of [BREDS](https://github.com/davidsbatista/BREDS) to understand how to give a tagged document collection and seeds to setup the bootstrapping of relationship instances with Snowball, both systems have a similar setup.
+
+
+# Contributing to BREDS
+
+Improvements, adding new features and bug fixes are welcome. If you wish to participate in the development of BREDS, 
+please read the following guidelines.
+
+## The contribution process at a glance
+
+1. Preparing the development environment
+2. Code away!
+3. Continuous Integration
+4. Submit your changes by opening a pull request
+
+Small fixes and additions can be submitted directly as pull requests, but larger changes should be discussed in 
+an issue first. You can expect a reply within a few days, but please be patient if it takes a bit longer. 
+
+
+## Preparing the development environment
+
+Make sure you have Python3.9 installed on your system
+
+macOs
+```
+brew install python@3.9
+python3.9 -m pip install --user --upgrade pip
+python3.9 -m pip install virtualenv
+```
+
+Clone the repository and prepare the development environment:
+
+```sh
+git clone git@github.com:davidsbatista/Snowball.git
+cd Snowball            
+python3.9 -m virtualenv venv         # create a new virtual environment for development using python3.9 
+source venv/bin/activate             # activate the virtual environment
+pip install -r requirements_dev.txt  # install the development requirements
+pip install -e .                     # install Snowball in edit mode
+```
+
+
+## Continuous Integration
+
+Snowball runs a continuous integration (CI) on all pull requests. This means that if you open a pull request (PR), a 
+full  test suite is run on your PR: 
+
+- The code is formatted using `black` and `isort` 
+- Unused imports are auto-removed using `pycln`
+- Linting is done using `pyling` and `flake8`
+- Type checking is done using `mypy`
+- Tests are run using `pytest`
+
+Nevertheless, if you prefer to run the tests & formatting locally, it's possible too. 
+
+```sh
+make all
+```
+
+## Opening a Pull Request
+
+Every PR should be accompanied by short description of the changes, including:
+- Impact and  motivation for the changes
+- Any open issues that are closed by this PR
+
+---
+
+Give a ⭐️ if this project helped you!

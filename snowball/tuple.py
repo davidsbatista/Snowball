@@ -1,20 +1,18 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 __author__ = "David S. Batista"
-__email__ = "dsbatista@inesc-id.pt"
+__email__ = "dsbatista@gmail.com"
 
 import sys
 
 from nltk import pos_tag, word_tokenize
-from Snowball.ReVerb import Reverb
+
+from snowball.reverb_breds import Reverb
 
 
-class Tuple(object):
+class Tuple:
     # see: http://www.ling.upenn.edu/courses/Fall_2007/ling001/penn_treebank_pos.html
     # select everything except stopwords, ADJ and ADV
 
-    filter_pos = ['JJ', 'JJR', 'JJS', 'RB', 'RBR', 'RBS', 'WRB']
+    filter_pos = ["JJ", "JJR", "JJS", "RB", "RBR", "RBS", "WRB"]
 
     def __init__(self, _e1, _e2, _sentence, _before, _between, _after, config):
         self.e1 = _e1
@@ -34,12 +32,12 @@ class Tuple(object):
         self.aft_reverb_vector = None
         self.passive_voice = None
 
-        if config.use_reverb == 'yes':
+        if config.use_reverb == "yes":
             # construct TF-IDF vectors with the words part of a ReVerb pattern
             # or if no ReVerb patterns with selected words from the contexts
             self.extract_patterns(config)
 
-        elif config.use_reverb == 'no':
+        elif config.use_reverb == "no":
             self.bef_vector = self.create_vector(self.bef_words)
             self.bet_vector = self.create_vector(self.bet_words)
             self.aft_vector = self.create_vector(self.aft_words)
@@ -49,13 +47,19 @@ class Tuple(object):
             sys.exit(0)
 
     def __str__(self):
-        return str(self.bef_words.encode("utf8") + ' ' + self.bet_words.encode("utf8") + ' ' +
-                   self.aft_words.encode("utf8"))
+        return f"{self.bef_words}  {self.bet_words}  {self.aft_words}"
 
     def __eq__(self, other):
         return (
-                    self.e1 == other.e1 and self.e2 == other.e2 and self.bef_words == other.bef_words and
-                    self.bet_words == other.bet_words and self.aft_words == other.aft_words)
+            self.e1 == other.e1
+            and self.e2 == other.e2
+            and self.bef_words == other.bef_words
+            and self.bet_words == other.bet_words
+            and self.aft_words == other.aft_words
+        )
+
+    def __hash__(self) -> int:
+        return hash(self.e1) ^ hash(self.e2) ^ hash(self.bef_words) ^ hash(self.bet_words) ^ hash(self.aft_words)
 
     def get_vector(self, context):
         if context == "bef":
@@ -73,14 +77,11 @@ class Tuple(object):
         return self.config.vsm.tf_idf_model[vect_ids]
 
     def tokenize(self, text):
-        return [word for word in word_tokenize(text.lower())
-                if word not in self.config.stopwords]
+        return [word for word in word_tokenize(text.lower()) if word not in self.config.stopwords]
 
     def construct_pattern_vector(self, pattern_tags, config):
         # construct TF-IDF representation for each context
-        pattern = [t[0] for t in pattern_tags if
-                   t[0].lower() not in config.stopwords and t[1] not in
-                   self.filter_pos]
+        pattern = [t[0] for t in pattern_tags if t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
 
         if len(pattern) >= 1:
             vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
@@ -91,14 +92,12 @@ class Tuple(object):
         # POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/english.pickle'
         text_tokens = word_tokenize(words)
         tags_ptb = pos_tag(text_tokens)
-        pattern = [t[0] for t in tags_ptb if
-                   t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
+        pattern = [t[0] for t in tags_ptb if t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
         if len(pattern) >= 1:
             vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
             return self.config.vsm.tf_idf_model[vect_ids]
 
     def extract_patterns(self, config):
-
         # extract ReVerb pattern and detect the presence of the passive voice
         patterns_bet_tags = Reverb.extract_reverb_patterns_ptb(self.bet_words)
         if len(patterns_bet_tags) > 0:
