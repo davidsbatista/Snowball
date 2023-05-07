@@ -11,7 +11,7 @@ from nltk.tag.mapping import map_tag
 from sentence import Sentence
 
 
-class Reverb(object):
+class Reverb:
     def __init__(self):
         self.lmtzr = WordNetLemmatizer()
         self.aux_verbs = ["be"]

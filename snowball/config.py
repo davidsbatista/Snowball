@@ -12,7 +12,7 @@ from snowball.seed import Seed
 from snowball.vector_space_model import VectorSpaceModel
 
 
-class Config(object):
+class Config:
     def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):
         self.seed_tuples = set()
         self.negative_seed_tuples = set()

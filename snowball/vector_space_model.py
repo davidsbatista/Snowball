@@ -5,12 +5,12 @@ import codecs
 import re
 import sys
 
-from nltk import word_tokenize
 from gensim import corpora
 from gensim.models import TfidfModel
+from nltk import word_tokenize
 
 
-class VectorSpaceModel(object):
+class VectorSpaceModel:
     def __init__(self, sentences_file, stopwords):
         self.dictionary = None
         self.corpus = None

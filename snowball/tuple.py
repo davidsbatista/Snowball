@@ -8,7 +8,7 @@ from nltk import pos_tag, word_tokenize
 from snowball.reverb_breds import Reverb
 
 
-class Tuple(object):
+class Tuple:
     # see: http://www.ling.upenn.edu/courses/Fall_2007/ling001/penn_treebank_pos.html
     # select everything except stopwords, ADJ and ADV
 

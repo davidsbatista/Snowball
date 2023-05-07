@@ -211,18 +211,18 @@ class Snowball(object):
         f_output = open("relationships.txt", "w")
         tmp = sorted(self.candidate_tuples, key=lambda tpl: tpl.confidence, reverse=True)
         for t in tmp:
-            f_output.write(
-                "instance: " + t.e1 + "\t" + t.e2 + "\tscore:" + str(t.confidence) + "\n"
-            )
+            f_output.write("instance: " + t.e1 + "\t" + t.e2 + "\tscore:" + str(t.confidence) + "\n")
             f_output.write("sentence: " + t.sentence + "\n")
+
             # writer patterns that extracted this tuple
-            patterns = set()
-            for pattern in self.candidate_tuples[t]:
-                print(pattern[0])
-                patterns.add(pattern[0])
-            for p in patterns:
-                p.merge_tuple_patterns()
-                f_output.write("pattern_bet: " + ", ".join(p.tuple_patterns) + "\n")
+            # patterns = set()
+            # for pattern in self.candidate_tuples[t]:
+            #     print(pattern[0])
+            #     patterns.add(pattern[0])
+            # for p in patterns:
+            #     p.merge_tuple_patterns()
+            #     f_output.write("pattern_bet: " + ", ".join(p.tuple_patterns) + "\n")
+
             if t.passive_voice is False or t.passive_voice is None:
                 f_output.write("passive voice: False\n")
             elif t.passive_voice is True:

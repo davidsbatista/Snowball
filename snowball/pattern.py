@@ -6,7 +6,7 @@ from copy import deepcopy
 from math import log
 
 
-class Pattern(object):
+class Pattern:
     def __init__(self, t=None):
         self.positive = 0
         self.negative = 0
