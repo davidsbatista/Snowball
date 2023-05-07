@@ -8,6 +8,10 @@ from math import log
 
 class Pattern:
     # pylint: disable=too-many-instance-attributes
+    """
+    A pattern is a set of tuples that is used to extract relationships between named-entities.
+    """
+
     def __init__(self, t=None):
         self.positive = 0
         self.negative = 0
@@ -34,6 +38,9 @@ class Pattern:
         return set(self.tuples) == set(other.tuples)
 
     def update_confidence_2003(self, config):
+        """
+        Update the confidence of the pattern
+        """
         if self.positive > 0:
             self.confidence = log(float(self.positive), 2) * (
                 float(self.positive) / float(self.positive + self.unknown * config.w_unk + self.negative * config.w_neg)
@@ -42,14 +49,23 @@ class Pattern:
             self.confidence = 0
 
     def update_confidence(self):
+        """
+        Update the confidence of the pattern
+        """
         if self.positive > 0 or self.negative > 0:
             self.confidence = float(self.positive) / float(self.positive + self.negative)
 
     def add_tuple(self, t):
+        """
+        Add another tuple to be used to generate the pattern
+        """
         self.tuples.append(t)
         self.centroid(self)
 
     def update_selectivity(self, t, config):
+        """
+        Update the selectivity of the pattern
+        """
         for s in config.seed_tuples:
             if s.ent1 == t.ent1 or s.ent1.strip() == t.ent1.strip():
                 if s.ent2 == t.ent2.strip() or s.ent2.strip() == t.ent2.strip():
@@ -67,7 +83,10 @@ class Pattern:
         self.update_confidence_2003(config)
 
     def merge_tuple_patterns(self):
-        # fazer o merge tendo em consideração todos os contextos
+        """
+        Merge all tuple patterns into one
+        """
+        # ToDo: fazer o merge tendo em consideração todos os contextos
         for t in self.tuples:
             self.tuple_patterns.add(t.bet_words)
 
@@ -93,9 +112,6 @@ class Pattern:
         # pylint: disable=too-many-nested-blocks
         """
         Calculate the centroid of a pattern
-        :param self:
-        :param context:
-        :return:
         """
         centroid = deepcopy(self.tuples[0].get_vector(context))
         if centroid is not None:

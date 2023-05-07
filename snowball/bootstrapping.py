@@ -20,8 +20,9 @@ from snowball.snowball_tuple import SnowballTuple
 PRINT_PATTERNS = False
 
 
-class Snowball(object):
+class Snowball:
     def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):
+        # pylint: disable=too-many-arguments
         self.patterns = []
         self.processed_tuples = []
         self.candidate_tuples = defaultdict(list)
@@ -33,11 +34,16 @@ class Snowball(object):
         """
         try:
             os.path.isfile("processed_tuples.pkl")
-            f = open("processed_tuples.pkl", "rb")
-            print("\nLoading processed tuples from disk...")
-            self.processed_tuples = pickle.load(f)
-            f.close()
-            print(len(self.processed_tuples), "tuples loaded")
+            with open("processed_tuples.pkl", "rb") as f:
+                print("\nLoading processed tuples from disk...")
+                self.processed_tuples = pickle.load(f)
+                print(len(self.processed_tuples), "tuples loaded")
+
+            # f = open("processed_tuples.pkl", "rb")
+            # print("\nLoading processed tuples from disk...")
+            # self.processed_tuples = pickle.load(f)
+            # f.close()
+            # print(len(self.processed_tuples), "tuples loaded")
 
         except IOError:
             print("\nGenerating relationship instances from sentences")
@@ -75,16 +81,16 @@ class Snowball(object):
             f.close()
 
     def init_bootstrap(self, tuples):
+        # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
+        """
+        Starts a bootstrap iteration
+        """
         if tuples is not None:
-            f = open(tuples, "r")
-            print("Loading pre-processed sentences", tuples)
-            self.processed_tuples = pickle.load(f)
-            f.close()
-            print(len(self.processed_tuples), "tuples loaded")
+            with open(tuples, "rb") as f:
+                print("Loading pre-processed sentences", tuples)
+                self.processed_tuples = pickle.load(f)
+                print(len(self.processed_tuples), "tuples loaded")
 
-        """
-        starts a bootstrap iteration
-        """
         i = 0
         while i <= self.config.number_iterations:
             print("\n=============================================")
@@ -222,17 +228,20 @@ class Snowball(object):
             f_output.write("\n")
         f_output.close()
 
-    def similarity(self, t, extraction_pattern):
+    def similarity(self, tpl, extraction_pattern):
+        """
+        Calculate the similarity between a tuple and an extraction pattern
+        """
         (bef, bet, aft) = (0, 0, 0)
 
-        if t.bef_vector is not None and extraction_pattern.centroid_bef is not None:
-            bef = cossim(t.bef_vector, extraction_pattern.centroid_bef)
+        if tpl.bef_vector is not None and extraction_pattern.centroid_bef is not None:
+            bef = cossim(tpl.bef_vector, extraction_pattern.centroid_bef)
 
-        if t.bet_vector is not None and extraction_pattern.centroid_bet is not None:
-            bet = cossim(t.bet_vector, extraction_pattern.centroid_bet)
+        if tpl.bet_vector is not None and extraction_pattern.centroid_bet is not None:
+            bet = cossim(tpl.bet_vector, extraction_pattern.centroid_bet)
 
-        if t.aft_vector is not None and extraction_pattern.centroid_aft is not None:
-            aft = cossim(t.aft_vector, extraction_pattern.centroid_aft)
+        if tpl.aft_vector is not None and extraction_pattern.centroid_aft is not None:
+            aft = cossim(tpl.aft_vector, extraction_pattern.centroid_aft)
 
         return self.config.alpha * bef + self.config.beta * bet + self.config.gamma * aft
 

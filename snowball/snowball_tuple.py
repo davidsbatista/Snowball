@@ -9,7 +9,7 @@ from snowball.reverb_breds import Reverb
 
 
 class SnowballTuple:
-    # pylint: disable=too-many-instance-attributes, too-few-public-methods
+    # pylint: disable=too-many-instance-attributes
     """
     Tuple class:
 
@@ -67,6 +67,9 @@ class SnowballTuple:
         return hash(self.ent1) ^ hash(self.ent2) ^ hash(self.bef_words) ^ hash(self.bet_words) ^ hash(self.aft_words)
 
     def get_vector(self, context):
+        """
+        Return the vector for the given context
+        """
         if context == "bef":
             return self.bef_vector
         elif context == "bet":
@@ -78,14 +81,22 @@ class SnowballTuple:
         sys.exit(0)
 
     def create_vector(self, text):
+        """
+        Create a TF-IDF vector for the given text
+        """
         vect_ids = self.config.vsm.dictionary.doc2bow(self.tokenize(text))
         return self.config.vsm.tf_idf_model[vect_ids]
 
     def tokenize(self, text):
+        """
+        Tokenize text and remove stopwords
+        """
         return [word for word in word_tokenize(text.lower()) if word not in self.config.stopwords]
 
     def construct_pattern_vector(self, pattern_tags, config):
-        # construct TF-IDF representation for each context
+        """
+        Construct TF-IDF representation for each context
+        """
         pattern = [t[0] for t in pattern_tags if t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
 
         if len(pattern) >= 1:
@@ -93,8 +104,11 @@ class SnowballTuple:
             return self.config.vsm.tf_idf_model[vect_ids]
 
     def construct_words_vectors(self, words, config):
-        # split text into tokens and tag them using NLTK's default English tagger
-        # POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/english.pickle'
+        """
+        Construct TF-IDF representation for each context
+        split text into tokens and tag them using NLTK's default English tagger
+        POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/english.pickle'
+        """
         text_tokens = word_tokenize(words)
         tags_ptb = pos_tag(text_tokens)
         pattern = [t[0] for t in tags_ptb if t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
@@ -103,7 +117,11 @@ class SnowballTuple:
             return self.config.vsm.tf_idf_model[vect_ids]
 
     def extract_patterns(self, config):
-        # extract ReVerb pattern and detect the presence of the passive voice
+        """
+        Extract ReVerb patterns and construct TF-IDF vectors for each context, it also detects the
+        presence of the passive voice.
+        """
+
         patterns_bet_tags = Reverb.extract_reverb_patterns_ptb(self.bet_words)
         if len(patterns_bet_tags) > 0:
             self.passive_voice = self.config.reverb.detect_passive_voice(patterns_bet_tags)
