@@ -2,7 +2,7 @@ __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
 
-class Seed(object):
+class Seed:
     def __init__(self, _e1, _e2):
         self.ent1 = _e1
         self.ent2 = _e2

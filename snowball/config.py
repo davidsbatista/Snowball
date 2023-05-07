@@ -2,18 +2,23 @@ __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
 import fileinput
-import os
 import pickle
 
 from nltk.corpus import stopwords
 
-from snowball.reverb import Reverb
+from snowball.reverb_breds import Reverb
 from snowball.seed import Seed
 from snowball.vector_space_model import VectorSpaceModel
 
 
 class Config:
+    # pylint: disable=too-many-instance-attributes
+    """
+    Configuration class
+    """
+
     def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):
+        # pylint: disable=too-many-arguments, too-many-statements, too-many-branches
         self.seed_tuples = set()
         self.negative_seed_tuples = set()
         self.e1_type = None
@@ -28,19 +33,19 @@ class Config:
                 continue
 
             if line.startswith("wUpdt"):
-                self.wUpdt = float(line.split("=")[1])
+                self.w_updt = float(line.split("=")[1])
 
             if line.startswith("wUnk"):
-                self.wUnk = float(line.split("=")[1])
+                self.w_unk = float(line.split("=")[1])
 
             if line.startswith("wNeg"):
-                self.wNeg = float(line.split("=")[1])
+                self.w_neg = float(line.split("=")[1])
 
             if line.startswith("number_iterations"):
                 self.number_iterations = int(line.split("=")[1])
 
             if line.startswith("use_RlogF"):
-                self.use_RlogF = bool(line.split("=")[1])
+                self.use_r_log_f = bool(line.split("=")[1])
 
             if line.startswith("min_pattern_support"):
                 self.min_pattern_support = int(line.split("=")[1])
@@ -74,49 +79,45 @@ class Config:
 
         print("\nConfiguration parameters")
         print("========================")
-        print("Relationship Representation")
         print("e1 type              :", self.e1_type)
         print("e2 type              :", self.e2_type)
         print("context window       :", self.context_window_size)
         print("max tokens away      :", self.max_tokens_away)
         print("min tokens away      :", self.min_tokens_away)
         print("use ReVerb           :", self.use_reverb)
-
-        print("\nVectors")
+        print("")
         print("alpha                :", self.alpha)
         print("beta                 :", self.beta)
         print("gamma                :", self.gamma)
-
-        print("\nSeeds:")
+        print("")
         print("positive seeds       :", len(self.seed_tuples))
         print("negative seeds       :", len(self.negative_seed_tuples))
-        print("negative seeds wNeg  :", self.wNeg)
-        print("unknown seeds wUnk   :", self.wUnk)
-
-        print("\nParameters and Thresholds")
+        print("negative seeds wNeg  :", self.w_neg)
+        print("unknown seeds wUnk   :", self.w_unk)
+        print("")
         print("threshold_similarity :", self.threshold_similarity)
         print("instance confidence  :", self.instance_confidence)
         print("min_pattern_support  :", self.min_pattern_support)
         print("iterations           :", self.number_iterations)
-        print("iteration wUpdt      :", self.wUpdt)
+        print("iteration wUpdt      :", self.w_updt)
         print("\n")
 
         try:
-            os.path.isfile("vsm.pkl")
-            f = open("vsm.pkl", "rb")
             print("\nLoading tf-idf model from disk...")
-            self.vsm = pickle.load(f)
-            f.close()
+            with open("vsm.pkl", "rb") as f_in:
+                self.vsm = pickle.load(f_in)
 
         except IOError:
             print("\nGenerating tf-idf model from sentences...")
             self.vsm = VectorSpaceModel(sentences_file, self.stopwords)
             print("\nWriting generated model to disk...")
-            f = open("vsm.pkl", "wb")
-            pickle.dump(self.vsm, f)
-            f.close()
+            with open("vsm.pkl", "wb") as f_out:
+                pickle.dump(self.vsm, f_out)
 
     def read_seeds(self, seeds_file):
+        """
+        Read seeds from file
+        """
         for line in fileinput.input(seeds_file):
             if line.startswith("#") or len(line) == 1:
                 continue
@@ -125,12 +126,14 @@ class Config:
             elif line.startswith("e2"):
                 self.e2_type = line.split(":")[1].strip()
             else:
-                e1 = line.split(";")[0].strip()
-                e2 = line.split(";")[1].strip()
-                seed = Seed(e1, e2)
-                self.seed_tuples.add(seed)
+                ent1 = line.split(";")[0].strip()
+                ent2 = line.split(";")[1].strip()
+                self.seed_tuples.add(Seed(ent1, ent2))
 
     def read_negative_seeds(self, negative_seeds):
+        """
+        Read negative seeds from file
+        """
         for line in fileinput.input(negative_seeds):
             if line.startswith("#") or len(line) == 1:
                 continue
@@ -139,7 +142,6 @@ class Config:
             elif line.startswith("e2"):
                 self.e2_type = line.split(":")[1].strip()
             else:
-                e1 = line.split(";")[0].strip()
-                e2 = line.split(";")[1].strip()
-                seed = Seed(e1, e2)
-                self.negative_seed_tuples.add(seed)
+                ent1 = line.split(";")[0].strip()
+                ent2 = line.split(";")[1].strip()
+                self.negative_seed_tuples.add(Seed(ent1, ent2))

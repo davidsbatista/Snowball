@@ -7,16 +7,17 @@ from math import log
 
 
 class Pattern:
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, t=None):
         self.positive = 0
         self.negative = 0
         self.unknown = 0
         self.confidence = 0
-        self.tuples = list()
+        self.tuples = []
         self.tuple_patterns = set()
-        self.centroid_bef = list()
-        self.centroid_bet = list()
-        self.centroid_aft = list()
+        self.centroid_bef = []
+        self.centroid_bet = []
+        self.centroid_aft = []
         if tuple is not None:
             self.tuples.append(t)
             self.centroid_bef = t.bef_vector
@@ -30,15 +31,12 @@ class Pattern:
         return output
 
     def __eq__(self, other):
-        if set(self.tuples) == set(other.tuples):
-            return True
-        else:
-            return False
+        return set(self.tuples) == set(other.tuples)
 
     def update_confidence_2003(self, config):
         if self.positive > 0:
             self.confidence = log(float(self.positive), 2) * (
-                float(self.positive) / float(self.positive + self.unknown * config.wUnk + self.negative * config.wNeg)
+                float(self.positive) / float(self.positive + self.unknown * config.w_unk + self.negative * config.w_neg)
             )
         elif self.positive == 0:
             self.confidence = 0
@@ -75,6 +73,9 @@ class Pattern:
 
     @staticmethod
     def centroid(self):
+        """
+        Calculate the centroid of a pattern
+        """
         # it there just one tuple associated with this pattern centroid is the tuple
         if len(self.tuples) == 1:
             t = self.tuples[0]
@@ -89,6 +90,13 @@ class Pattern:
 
     @staticmethod
     def calculate_centroid(self, context):
+        # pylint: disable=too-many-nested-blocks
+        """
+        Calculate the centroid of a pattern
+        :param self:
+        :param context:
+        :return:
+        """
         centroid = deepcopy(self.tuples[0].get_vector(context))
         if centroid is not None:
             # add all other words from other tuples
@@ -123,7 +131,7 @@ class Pattern:
                     assert tmp[1] <= 1.0
                     assert tmp[1] >= 0.0
                 except AssertionError:
-                    "Error calculating extraction pattern centroid"
+                    print("Error calculating extraction pattern centroid")
                     sys.exit(0)
                 centroid[i] = tuple(tmp)
 

@@ -22,8 +22,8 @@ PRINT_PATTERNS = False
 
 class Snowball(object):
     def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):
-        self.patterns = list()
-        self.processed_tuples = list()
+        self.patterns = []
+        self.processed_tuples = []
         self.candidate_tuples = defaultdict(list)
         self.config = Config(config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence)
 
@@ -62,7 +62,9 @@ class Snowball(object):
                         bet_tokens = word_tokenize(rel.between)
                         aft_tokens = word_tokenize(rel.after)
                         if not (bef_tokens == 0 and bet_tokens == 0 and aft_tokens == 0):
-                            t = SnowballTuple(rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config)
+                            t = SnowballTuple(
+                                rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config
+                            )
                             self.processed_tuples.append(t)
             f_sentences.close()
 
@@ -193,7 +195,7 @@ class Snowball(object):
                     # if parameter Wupdt < 0.5 the system trusts new examples less on each iteration
                     # which will lead to more conservative patterns and have a damping effect.
                     if i > 0:
-                        t.confidence = t.confidence * self.config.wUpdt + t.confidence_old * (1 - self.config.wUpdt)
+                        t.confidence = t.confidence * self.config.w_updt + t.confidence_old * (1 - self.config.w_updt)
 
                 # update seed set of tuples to use in next iteration
                 # seeds = { T | Conf(T) > min_tuple_confidence }
@@ -213,16 +215,6 @@ class Snowball(object):
         for t in tmp:
             f_output.write("instance: " + t.ent1 + "\t" + t.ent2 + "\tscore:" + str(t.confidence) + "\n")
             f_output.write("sentence: " + t.sentence + "\n")
-
-            # writer patterns that extracted this tuple
-            # patterns = set()
-            # for pattern in self.candidate_tuples[t]:
-            #     print(pattern[0])
-            #     patterns.add(pattern[0])
-            # for p in patterns:
-            #     p.merge_tuple_patterns()
-            #     f_output.write("pattern_bet: " + ", ".join(p.tuple_patterns) + "\n")
-
             if t.passive_voice is False or t.passive_voice is None:
                 f_output.write("passive voice: False\n")
             elif t.passive_voice is True:

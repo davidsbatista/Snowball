@@ -9,6 +9,7 @@ from snowball.reverb_breds import Reverb
 
 
 class SnowballTuple:
+    # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """
     Tuple class:
 
@@ -55,11 +56,11 @@ class SnowballTuple:
 
     def __eq__(self, other):
         return (
-                self.ent1 == other.ent1
-                and self.ent2 == other.ent2
-                and self.bef_words == other.bef_words
-                and self.bet_words == other.bet_words
-                and self.aft_words == other.aft_words
+            self.ent1 == other.ent1
+            and self.ent2 == other.ent2
+            and self.bef_words == other.bef_words
+            and self.bet_words == other.bet_words
+            and self.aft_words == other.aft_words
         )
 
     def __hash__(self) -> int:
