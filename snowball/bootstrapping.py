@@ -9,6 +9,7 @@ from collections import defaultdict
 
 from gensim.matutils import cossim
 from nltk import word_tokenize
+from tqdm import tqdm
 
 from snowball.config import Config
 from snowball.pattern import Pattern
@@ -65,7 +66,7 @@ class Snowball:
             with open("processed_tuples.pkl", "wb") as f_out:
                 pickle.dump(self.processed_tuples, f_out)
 
-    def init_bootstrap(self, tuples):
+    def init_bootstrap(self, tuples):  # noqa: C901
         # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
         """
         Starts a bootstrap iteration
@@ -85,7 +86,7 @@ class Snowball:
                 print(f"{seed.ent1}\t{seed.ent2}")
 
             # Looks for sentences matching the seed instances
-            count_matches, matched_tuples = self.match_seeds_tuples(self)
+            count_matches, matched_tuples = self.match_seeds_tuples()
 
             if len(matched_tuples) == 0:
                 print("\nNo seed matches found")
@@ -99,7 +100,7 @@ class Snowball:
 
                 # Cluster the matched instances: generate patterns/update patterns
                 print("\nClustering matched instances to generate patterns")
-                self.cluster_tuples(self, matched_tuples)
+                self.cluster_tuples(matched_tuples)
 
                 # Eliminate patterns supported by less than 'min_pattern_support' tuples
                 new_patterns = [p for p in self.patterns if len(p.tuples) >= self.config.min_pattern_support]
@@ -118,13 +119,8 @@ class Snowball:
                 # Each candidate tuple will then have a number of patterns that helped generate it,
                 # each with an associated de gree of match. Snowball uses this infor
                 print("\nCollecting instances based on extraction patterns")
-                count = 0
                 pattern_best = None
-                for tpl in self.processed_tuples:
-                    count += 1
-                    if count % 1000 == 0:
-                        sys.stdout.write(".")
-                        sys.stdout.flush()
+                for tpl in tqdm(self.processed_tuples):
                     sim_best = 0
                     for extraction_pattern in self.patterns:
                         score = self.similarity(tpl, extraction_pattern)
@@ -147,11 +143,12 @@ class Snowball:
                             self.candidate_tuples[tpl].append((pattern_best, sim_best))
 
                     # update extraction pattern confidence
-                    extraction_pattern.confidence_old = extraction_pattern.confidence
-                    extraction_pattern.update_confidence()
+                    extraction_pattern.confidence_old = (  # pylint: disable=undefined-loop-variable
+                        extraction_pattern.confidence  # pylint: disable=undefined-loop-variable
+                    )
+                    extraction_pattern.update_confidence()  # pylint: disable=undefined-loop-variable
 
-                # normalize patterns confidence
-                # find the maximum value of confidence and divide all by the maximum
+                # normalize patterns confidence find the maximum value of confidence and divide all by the maximum
                 max_confidence = 0
                 for pattern in self.patterns:
                     if pattern.confidence > max_confidence:
@@ -237,7 +234,6 @@ class Snowball:
 
         return self.config.alpha * bef + self.config.beta * bet + self.config.gamma * aft
 
-    @staticmethod
     def cluster_tuples(self, matched_tuples):
         """
         single-pass clustering
@@ -270,7 +266,6 @@ class Snowball:
             else:
                 self.patterns[max_similarity_cluster_index].add_tuple(tpl)
 
-    @staticmethod
     def match_seeds_tuples(self):
         """
         Checks if an extracted tuple matches seeds tuples

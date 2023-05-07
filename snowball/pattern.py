@@ -60,7 +60,7 @@ class Pattern:
         Add another tuple to be used to generate the pattern
         """
         self.tuples.append(tpl)
-        self.centroid(self)
+        self.updated_centroid()
 
     def update_selectivity(self, tpl, config):
         """
@@ -90,8 +90,7 @@ class Pattern:
         for tpl in self.tuples:
             self.tuple_patterns.add(tpl.bet_words)
 
-    @staticmethod
-    def centroid(self):
+    def updated_centroid(self):
         """
         Calculate the centroid of a pattern
         """
@@ -103,12 +102,11 @@ class Pattern:
             self.centroid_aft = tpl.aft_vector
         else:
             # if there are more tuples associated, calculate the average over all vectors
-            self.centroid_bef = self.calculate_centroid(self, "bef")
-            self.centroid_bet = self.calculate_centroid(self, "bet")
-            self.centroid_aft = self.calculate_centroid(self, "aft")
+            self.centroid_bef = self.calculate_centroid("bef")
+            self.centroid_bet = self.calculate_centroid("bet")
+            self.centroid_aft = self.calculate_centroid("aft")
 
-    @staticmethod
-    def calculate_centroid(self, context):
+    def calculate_centroid(self, context):  # noqa: C901
         # pylint: disable=too-many-nested-blocks
         """
         Calculate the centroid of a pattern

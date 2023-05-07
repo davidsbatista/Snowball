@@ -17,7 +17,7 @@ class Config:
     Configuration class
     """
 
-    def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):
+    def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):  # noqa: C901
         # pylint: disable=too-many-arguments, too-many-statements, too-many-branches
         self.seed_tuples = set()
         self.negative_seed_tuples = set()

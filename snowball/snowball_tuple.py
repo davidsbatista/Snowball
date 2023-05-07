@@ -74,11 +74,8 @@ class SnowballTuple:
             return self.bef_vector
         if context == "bet":
             return self.bet_vector
-        if context == "aft":
-            return self.aft_vector
-
-        print("Error, vector must be 'bef', 'bet' or 'aft'")
-        sys.exit(0)
+        # ToDo: can only be "aft" here
+        return self.aft_vector
 
     def create_vector(self, text):
         """
@@ -93,7 +90,7 @@ class SnowballTuple:
         """
         return [word for word in word_tokenize(text.lower()) if word not in self.config.stopwords]
 
-    def construct_pattern_vector(self, pattern_tags, config):
+    def construct_pattern_vector(self, pattern_tags, config):  # pylint: disable=inconsistent-return-statements
         """
         Construct TF-IDF representation for each context
         """
@@ -103,7 +100,7 @@ class SnowballTuple:
             vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
             return self.config.vsm.tf_idf_model[vect_ids]
 
-    def construct_words_vectors(self, words, config):
+    def construct_words_vectors(self, words, config):  # pylint: disable=inconsistent-return-statements
         """
         Construct TF-IDF representation for each context
         split text into tokens and tag them using NLTK's default English tagger

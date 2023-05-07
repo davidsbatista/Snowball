@@ -81,7 +81,7 @@ class Sentence:
     Sentence class to hold information about a sentence.
     """
 
-    def __init__(self, _sentence, e1_type, e2_type, max_tokens, min_tokens, window_size):
+    def __init__(self, _sentence, e1_type, e2_type, max_tokens, min_tokens, window_size):  # noqa: C901
         # pylint: disable=too-many-locals, too-many-arguments
         self.relationships = set()
         self.sentence = _sentence
