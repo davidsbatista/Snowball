@@ -23,6 +23,9 @@ jobs:
     - name: Checking formatting and analysing the code with pylint and flake8
       run: make lint
 
+    - name: Type checking with mypy
+      run: mypy --config mypy.ini -p snowball
+
     - name: Running tests
       run: make test
 
@@ -41,5 +44,3 @@ jobs:
         branch: coverage-badge
         folder: coverage
 
-    - name: Type checking with mypy
-      run: mypy --config mypy.ini -p breds
