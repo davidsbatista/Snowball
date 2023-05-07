@@ -8,15 +8,20 @@ from nltk import pos_tag, word_tokenize
 from snowball.reverb_breds import Reverb
 
 
-class Tuple:
-    # see: http://www.ling.upenn.edu/courses/Fall_2007/ling001/penn_treebank_pos.html
-    # select everything except stopwords, ADJ and ADV
+class SnowballTuple:
+    # pylint: disable=too-many-instance-attributes
+    """
+    Tuple class:
+
+    see: http://www.ling.upenn.edu/courses/Fall_2007/ling001/penn_treebank_pos.html
+    select everything except stopwords, ADJ and ADV
+    """
 
     filter_pos = ["JJ", "JJR", "JJS", "RB", "RBR", "RBS", "WRB"]
 
     def __init__(self, _e1, _e2, _sentence, _before, _between, _after, config):
-        self.e1 = _e1
-        self.e2 = _e2
+        self.ent1 = _e1
+        self.ent2 = _e2
         self.sentence = _sentence
         self.confidence = 0
         self.confidence_old = 0
@@ -51,45 +56,56 @@ class Tuple:
 
     def __eq__(self, other):
         return (
-            self.e1 == other.e1
-            and self.e2 == other.e2
+            self.ent1 == other.ent1
+            and self.ent2 == other.ent2
             and self.bef_words == other.bef_words
             and self.bet_words == other.bet_words
             and self.aft_words == other.aft_words
         )
 
     def __hash__(self) -> int:
-        return hash(self.e1) ^ hash(self.e2) ^ hash(self.bef_words) ^ hash(self.bet_words) ^ hash(self.aft_words)
+        return hash(self.ent1) ^ hash(self.ent2) ^ hash(self.bef_words) ^ hash(self.bet_words) ^ hash(self.aft_words)
 
     def get_vector(self, context):
+        """
+        Return the vector for the given context
+        """
         if context == "bef":
             return self.bef_vector
-        elif context == "bet":
+        if context == "bet":
             return self.bet_vector
-        elif context == "aft":
-            return self.aft_vector
-        else:
-            print("Error, vector must be 'bef', 'bet' or 'aft'")
-            sys.exit(0)
+        # ToDo: can only be "aft" here
+        return self.aft_vector
 
     def create_vector(self, text):
+        """
+        Create a TF-IDF vector for the given text
+        """
         vect_ids = self.config.vsm.dictionary.doc2bow(self.tokenize(text))
         return self.config.vsm.tf_idf_model[vect_ids]
 
     def tokenize(self, text):
+        """
+        Tokenize text and remove stopwords
+        """
         return [word for word in word_tokenize(text.lower()) if word not in self.config.stopwords]
 
-    def construct_pattern_vector(self, pattern_tags, config):
-        # construct TF-IDF representation for each context
+    def construct_pattern_vector(self, pattern_tags, config):  # pylint: disable=inconsistent-return-statements
+        """
+        Construct TF-IDF representation for each context
+        """
         pattern = [t[0] for t in pattern_tags if t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
 
         if len(pattern) >= 1:
             vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
             return self.config.vsm.tf_idf_model[vect_ids]
 
-    def construct_words_vectors(self, words, config):
-        # split text into tokens and tag them using NLTK's default English tagger
-        # POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/english.pickle'
+    def construct_words_vectors(self, words, config):  # pylint: disable=inconsistent-return-statements
+        """
+        Construct TF-IDF representation for each context
+        split text into tokens and tag them using NLTK's default English tagger
+        POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/english.pickle'
+        """
         text_tokens = word_tokenize(words)
         tags_ptb = pos_tag(text_tokens)
         pattern = [t[0] for t in tags_ptb if t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
@@ -98,7 +114,11 @@ class Tuple:
             return self.config.vsm.tf_idf_model[vect_ids]
 
     def extract_patterns(self, config):
-        # extract ReVerb pattern and detect the presence of the passive voice
+        """
+        Extract ReVerb patterns and construct TF-IDF vectors for each context, it also detects the
+        presence of the passive voice.
+        """
+
         patterns_bet_tags = Reverb.extract_reverb_patterns_ptb(self.bet_words)
         if len(patterns_bet_tags) > 0:
             self.passive_voice = self.config.reverb.detect_passive_voice(patterns_bet_tags)

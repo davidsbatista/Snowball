@@ -15,6 +15,9 @@ regex_linked = re.compile("<[A-Z]+ url=[^>]+>[^<]+</[A-Z]+>", re.U)
 
 
 class Relationship:
+    # pylint: disable=too-many-instance-attributes
+    """Relationship class to hold information about a relationship extracted from a sentence."""
+
     def __init__(
         self,
         _sentence,
@@ -38,70 +41,66 @@ class Relationship:
         self.arg2type = _arg2type
 
         if _before is None and _between is None and _after is None and _sentence is not None:
-            matches = []
-            for m in re.finditer(regex_linked, self.sentence):
-                matches.append(m)
+            matches = list(re.finditer(regex_linked, self.sentence))
 
-            for x in range(0, len(matches) - 1):
-                if x == 0:
+            for match_idx in range(0, len(matches) - 1):
+                if match_idx == 0:
                     start = 0
-                if x > 0:
-                    start = matches[x - 1].end()
+                if match_idx > 0:
+                    start = matches[match_idx - 1].end()
                 try:
-                    end = matches[x + 2].init_bootstrapp()
+                    end = matches[match_idx + 2].init_bootstrapp()
                 except IndexError:
                     end = len(self.sentence) - 1
 
-                self.before = self.sentence[start : matches[x].init_bootstrapp()]
-                self.between = self.sentence[matches[x].end() : matches[x + 1].init_bootstrapp()]
-                self.after = self.sentence[matches[x + 1].end() : end]
-                self.ent1 = matches[x].group()
-                self.ent2 = matches[x + 1].group()
+                self.before = self.sentence[start : matches[match_idx].init_bootstrapp()]
+                self.between = self.sentence[matches[match_idx].end() : matches[match_idx + 1].init_bootstrapp()]
+                self.after = self.sentence[matches[match_idx + 1].end() : end]
+                self.ent1 = matches[match_idx].group()
+                self.ent2 = matches[match_idx + 1].group()
                 arg1match = re.match("<[A-Z]+>", self.ent1)
                 arg2match = re.match("<[A-Z]+>", self.ent2)
                 self.arg1type = arg1match.group()[1:-1]
                 self.arg2type = arg2match.group()[1:-1]
 
     def __eq__(self, other):
-        if (
+        return (
             self.ent1 == other.ent1
             and self.before == other.before
             and self.between == other.between
             and self.after == other.after
-        ):
-            return True
-        else:
-            return False
+        )
 
     def __hash__(self):
         return hash(self.ent1) ^ hash(self.ent2) ^ hash(self.before) ^ hash(self.between) ^ hash(self.after)
 
 
 class Sentence:
-    def __init__(self, _sentence, e1_type, e2_type, max_tokens, min_tokens, window_size):
+    # pylint: disable=too-few-public-methods
+    """
+    Sentence class to hold information about a sentence.
+    """
+
+    def __init__(self, _sentence, e1_type, e2_type, max_tokens, min_tokens, window_size):  # noqa: C901
+        # pylint: disable=too-many-locals, too-many-arguments
         self.relationships = set()
         self.sentence = _sentence
-        matches = []
-
-        # TODO: regex to used depends on Config.tags_type
-        # for m in re.finditer(regex_linked, self.sentence):
-        for m in re.finditer(regex_simple, self.sentence):
-            matches.append(m)
+        matches = list(re.finditer(regex_simple, self.sentence))
 
         if len(matches) >= 2:
-            for x in range(0, len(matches) - 1):
-                if x == 0:
+            for match_idx in range(0, len(matches) - 1):
+                if match_idx == 0:
                     start = 0
-                if x > 0:
-                    start = matches[x - 1].end()
+                if match_idx > 0:
+                    start = matches[match_idx - 1].end()
                 try:
-                    end = matches[x + 2].start()
+                    end = matches[match_idx + 2].start()
                 except IndexError:
                     end = len(self.sentence) - 1
 
-                before = self.sentence[start : matches[x].start()]
-                between = self.sentence[matches[x].end() : matches[x + 1].start()]
-                after = self.sentence[matches[x + 1].end() : end]
+                before = self.sentence[start : matches[match_idx].start()]
+                between = self.sentence[matches[match_idx].end() : matches[match_idx + 1].start()]
+                after = self.sentence[matches[match_idx + 1].end() : end]
 
                 # select 'window_size' tokens from left and right context
                 before = word_tokenize(before)[-window_size:]
@@ -115,35 +114,14 @@ class Sentence:
                 if not number_bet_tokens > max_tokens and not number_bet_tokens < min_tokens:
                     # TODO: run code according to Config.tags_type
                     # simple tags
-                    ent1 = matches[x].group()
-                    ent2 = matches[x + 1].group()
+                    ent1 = matches[match_idx].group()
+                    ent2 = matches[match_idx + 1].group()
                     arg1match = re.match("<[A-Z]+>", ent1)
                     arg2match = re.match("<[A-Z]+>", ent2)
                     ent1 = re.sub("</?[A-Z]+>", "", ent1, count=2, flags=0)
                     ent2 = re.sub("</?[A-Z]+>", "", ent2, count=2, flags=0)
                     arg1type = arg1match.group()[1:-1]
                     arg2type = arg2match.group()[1:-1]
-
-                    """
-                    # linked tags
-                    ent1 = re.findall('url=([^>]+)', matches[x].group())[0]
-                    ent2 = re.findall('url=([^>]+)', matches[x+1].group())[0]
-                    arg1type = re.findall('<([A-Z]+)', matches[x].group())[0]
-                    arg2type = re.findall('<([A-Z]+)', matches[x+1].group())[0]
-                    """
-
-                    # DEBUG
-                    """
-                    print _sentence
-                    print matches[x].group()
-                    print matches[x+1].group()
-                    print "BEF", before
-                    print "BET", between
-                    print "AFT", after
-                    print "ent1", ent1, arg1type
-                    print "ent2", ent2, arg2type
-                    print "==========================================\n"
-                    """
 
                     if ent1 == ent2:
                         continue
@@ -162,26 +140,3 @@ class Sentence:
                             _sentence, before, between, after, ent1, ent2, arg1type, arg2type, _type=None
                         )
                         self.relationships.add(rel)
-
-
-class SentenceParser:
-    def __init__(self, _sentence, e1_type, e2_type):
-        self.relationships = set()
-        self.sentence = _sentence
-        self.entities = list()
-        self.valid = False
-        self.tree = None
-        self.deps = None
-
-        for m in re.finditer(regex, self.sentence):
-            self.entities.append(m.group())
-
-        for e1 in self.entities:
-            for e2 in self.entities:
-                if e1 == e2:
-                    continue
-                arg1match = re.match("<([A-Z]+)>", e1)
-                arg2match = re.match("<([A-Z]+)>", e2)
-                if arg1match.group(1) == e1_type and arg2match.group(1) == e2_type:
-                    self.valid = True
-                    break
