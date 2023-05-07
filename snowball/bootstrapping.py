@@ -153,33 +153,23 @@ class Snowball:
                 # normalize patterns confidence
                 # find the maximum value of confidence and divide all by the maximum
                 max_confidence = 0
-                for p in self.patterns:
-                    if p.confidence > max_confidence:
-                        max_confidence = p.confidence
+                for pattern in self.patterns:
+                    if pattern.confidence > max_confidence:
+                        max_confidence = pattern.confidence
 
                 if max_confidence > 0:
-                    for p in self.patterns:
-                        p.confidence = float(p.confidence) / float(max_confidence)
+                    for pattern in self.patterns:
+                        pattern.confidence = float(pattern.confidence) / float(max_confidence)
 
-                if PRINT_PATTERNS is True:
-                    print("\nPatterns:")
-                    for p in self.patterns:
-                        p.merge_tuple_patterns()
-                        print("Patterns:", len(p.tuples))
-                        print("Positive", p.positive)
-                        print("Negative", p.negative)
-                        print("Unknown", p.unknown)
-                        print("Tuples", len(p.tuples))
-                        print("Pattern Confidence", p.confidence)
-                        print("\n")
+                self.debug_patterns()
 
                 # update tuple confidence based on patterns confidence
                 print("\nCalculating tuples confidence")
                 for tpl in self.candidate_tuples.keys():
                     confidence = 1
                     tpl.confidence_old = tpl.confidence
-                    for p in self.candidate_tuples.get(tpl):
-                        confidence *= 1 - (p[0].confidence * p[1])
+                    for pattern in self.candidate_tuples.get(tpl):
+                        confidence *= 1 - (pattern[0].confidence * pattern[1])
                     tpl.confidence = 1 - confidence
 
                     # use past confidence values to calculate new confidence
@@ -214,6 +204,22 @@ class Snowball:
                     f_output.write("passive voice: True\n")
                 f_output.write("\n")
 
+    def debug_patterns(self):
+        """
+        Print patterns to stdout
+        """
+        if PRINT_PATTERNS is True:
+            print("\nPatterns:")
+            for pattern in self.patterns:
+                pattern.merge_tuple_patterns()
+                print("Patterns:", len(pattern.tuples))
+                print("Positive", pattern.positive)
+                print("Negative", pattern.negative)
+                print("Unknown", pattern.unknown)
+                print("Tuples", len(pattern.tuples))
+                print("Pattern Confidence", pattern.confidence)
+                print("\n")
+
     def similarity(self, tpl, extraction_pattern):
         """
         Calculate the similarity between a tuple and an extraction pattern
@@ -237,56 +243,51 @@ class Snowball:
         single-pass clustering
         """
         start = 0
-        # Initialize: if no patterns exist, first tuple goes to first cluster
+        # initialize: if no patterns exist, first tuple goes to first cluster
         if len(self.patterns) == 0:
-            c1 = Pattern(matched_tuples[0])
-            self.patterns.append(c1)
+            self.patterns.append(Pattern(matched_tuples[0]))
             start = 1
 
-        # Compute the similarity between an instance with each pattern go through all tuples
+        # compute the similarity between an instance with each pattern go through all tuples
         for i in range(start, len(matched_tuples), 1):
-            t = matched_tuples[i]
+            tpl = matched_tuples[i]
             max_similarity = 0
             max_similarity_cluster_index = 0
 
-            # go through all patterns(clusters of tuples) and find the one with the
-            # highest similarity score
-            for w in range(0, len(self.patterns), 1):
-                extraction_pattern = self.patterns[w]
-                score = self.similarity(t, extraction_pattern)
+            # go through all patterns(clusters of tuples) and find the one with the highest similarity score
+            for pattern_idx in range(0, len(self.patterns), 1):
+                extraction_pattern = self.patterns[pattern_idx]
+                score = self.similarity(tpl, extraction_pattern)
                 if score > max_similarity:
                     max_similarity = score
-                    max_similarity_cluster_index = w
+                    max_similarity_cluster_index = pattern_idx
 
             # if max_similarity < min_degree_match create a new cluster having this tuple as the centroid
             if max_similarity < self.config.threshold_similarity:
-                c = Pattern(t)
-                self.patterns.append(c)
+                self.patterns.append(Pattern(tpl))
 
             # if max_similarity >= min_degree_match add to the cluster with the highest similarity
             else:
-                self.patterns[max_similarity_cluster_index].add_tuple(t)
+                self.patterns[max_similarity_cluster_index].add_tuple(tpl)
 
     @staticmethod
     def match_seeds_tuples(self):
         """
-        checks if an extracted tuple matches seeds tuples
+        Checks if an extracted tuple matches seeds tuples
         """
         matched_tuples = []
-        count_matches = {}
-        for t in self.processed_tuples:
-            for s in self.config.seed_tuples:
-                if t.ent1 == s.ent1 and t.ent2 == s.ent2:
-                    matched_tuples.append(t)
-                    try:
-                        count_matches[(t.ent1, t.ent2)] += 1
-                    except KeyError:
-                        count_matches[(t.ent1, t.ent2)] = 1
+        count_matches = defaultdict(int)
+        for tpl in self.processed_tuples:
+            for seed in self.config.seed_tuples:
+                if tpl.ent1 == seed.ent1 and tpl.ent2 == seed.ent2:
+                    matched_tuples.append(tpl)
+                    count_matches[(tpl.ent1, tpl.ent2)] += 1
 
         return count_matches, matched_tuples
 
 
 def main():
+    # pylint: disable=missing-function-docstring
     if len(sys.argv) != 7:
         print(
             "\nSnowball.py paramters.cfg sentences_file seeds_file_positive seeds_file_negative similarity_threshold"

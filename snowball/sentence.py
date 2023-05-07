@@ -41,25 +41,23 @@ class Relationship:
         self.arg2type = _arg2type
 
         if _before is None and _between is None and _after is None and _sentence is not None:
-            matches = []
-            for m in re.finditer(regex_linked, self.sentence):
-                matches.append(m)
+            matches = list(re.finditer(regex_linked, self.sentence))
 
-            for x in range(0, len(matches) - 1):
-                if x == 0:
+            for match_idx in range(0, len(matches) - 1):
+                if match_idx == 0:
                     start = 0
-                if x > 0:
-                    start = matches[x - 1].end()
+                if match_idx > 0:
+                    start = matches[match_idx - 1].end()
                 try:
-                    end = matches[x + 2].init_bootstrapp()
+                    end = matches[match_idx + 2].init_bootstrapp()
                 except IndexError:
                     end = len(self.sentence) - 1
 
-                self.before = self.sentence[start : matches[x].init_bootstrapp()]
-                self.between = self.sentence[matches[x].end() : matches[x + 1].init_bootstrapp()]
-                self.after = self.sentence[matches[x + 1].end() : end]
-                self.ent1 = matches[x].group()
-                self.ent2 = matches[x + 1].group()
+                self.before = self.sentence[start : matches[match_idx].init_bootstrapp()]
+                self.between = self.sentence[matches[match_idx].end() : matches[match_idx + 1].init_bootstrapp()]
+                self.after = self.sentence[matches[match_idx + 1].end() : end]
+                self.ent1 = matches[match_idx].group()
+                self.ent2 = matches[match_idx + 1].group()
                 arg1match = re.match("<[A-Z]+>", self.ent1)
                 arg2match = re.match("<[A-Z]+>", self.ent2)
                 self.arg1type = arg1match.group()[1:-1]
@@ -87,25 +85,22 @@ class Sentence:
         # pylint: disable=too-many-locals, too-many-arguments
         self.relationships = set()
         self.sentence = _sentence
-        matches = []
-
-        for m in re.finditer(regex_simple, self.sentence):
-            matches.append(m)
+        matches = list(re.finditer(regex_simple, self.sentence))
 
         if len(matches) >= 2:
-            for x in range(0, len(matches) - 1):
-                if x == 0:
+            for match_idx in range(0, len(matches) - 1):
+                if match_idx == 0:
                     start = 0
-                if x > 0:
-                    start = matches[x - 1].end()
+                if match_idx > 0:
+                    start = matches[match_idx - 1].end()
                 try:
-                    end = matches[x + 2].start()
+                    end = matches[match_idx + 2].start()
                 except IndexError:
                     end = len(self.sentence) - 1
 
-                before = self.sentence[start : matches[x].start()]
-                between = self.sentence[matches[x].end() : matches[x + 1].start()]
-                after = self.sentence[matches[x + 1].end() : end]
+                before = self.sentence[start : matches[match_idx].start()]
+                between = self.sentence[matches[match_idx].end() : matches[match_idx + 1].start()]
+                after = self.sentence[matches[match_idx + 1].end() : end]
 
                 # select 'window_size' tokens from left and right context
                 before = word_tokenize(before)[-window_size:]
@@ -119,8 +114,8 @@ class Sentence:
                 if not number_bet_tokens > max_tokens and not number_bet_tokens < min_tokens:
                     # TODO: run code according to Config.tags_type
                     # simple tags
-                    ent1 = matches[x].group()
-                    ent2 = matches[x + 1].group()
+                    ent1 = matches[match_idx].group()
+                    ent2 = matches[match_idx + 1].group()
                     arg1match = re.match("<[A-Z]+>", ent1)
                     arg2match = re.match("<[A-Z]+>", ent2)
                     ent1 = re.sub("</?[A-Z]+>", "", ent1, count=2, flags=0)
