@@ -1,5 +1,5 @@
 __author__ = "David S. Batista"
-__email__ = "dsbatista@inesc-id.pt"
+__email__ = "dsbatista@gmail.com"
 
 import fileinput
 import os
@@ -7,20 +7,20 @@ import pickle
 
 from nltk.corpus import stopwords
 
-from snowball.vector_space_model import VectorSpaceModel
 from snowball.reverb import Reverb
 from snowball.seed import Seed
+from snowball.vector_space_model import VectorSpaceModel
 
 
 class Config(object):
-    def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidance):
+    def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):
         self.seed_tuples = set()
         self.negative_seed_tuples = set()
         self.e1_type = None
         self.e2_type = None
         self.stopwords = stopwords.words("english")
         self.threshold_similarity = similarity
-        self.instance_confidance = confidance
+        self.instance_confidence = confidence
         self.reverb = Reverb()
 
         for line in fileinput.input(config_file):
@@ -95,7 +95,7 @@ class Config(object):
 
         print("\nParameters and Thresholds")
         print("threshold_similarity :", self.threshold_similarity)
-        print("instance confidence  :", self.instance_confidance)
+        print("instance confidence  :", self.instance_confidence)
         print("min_pattern_support  :", self.min_pattern_support)
         print("iterations           :", self.number_iterations)
         print("iteration wUpdt      :", self.wUpdt)
@@ -103,7 +103,7 @@ class Config(object):
 
         try:
             os.path.isfile("vsm.pkl")
-            f = open("vsm.pkl", "r")
+            f = open("vsm.pkl", "rb")
             print("\nLoading tf-idf model from disk...")
             self.vsm = pickle.load(f)
             f.close()

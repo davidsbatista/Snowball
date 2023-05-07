@@ -1,14 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 __author__ = "David S. Batista"
-__email__ = "dsbatista@inesc-id.pt"
+__email__ = "dsbatista@gmail.com"
 
 import codecs
 import re
 import sys
 
-import nltk
+from nltk import word_tokenize
 from gensim import corpora
 from gensim.models import TfidfModel
 
@@ -25,7 +22,7 @@ class VectorSpaceModel(object):
             line = re.sub("<[A-Z]+>[^<]+</[A-Z]+>", "", line)
 
             # remove stop words and tokenize
-            document = [word for word in nltk.word_tokenize(line.lower()) if word not in stopwords]
+            document = [word for word in word_tokenize(line.lower()) if word not in stopwords]
             documents.append(document)
             count += 1
             if count % 10000 == 0:

@@ -1,5 +1,5 @@
 __author__ = "David S. Batista"
-__email__ = "dsbatista@inesc-id.pt"
+__email__ = "dsbatista@gmail.com"
 
 import sys
 from copy import deepcopy

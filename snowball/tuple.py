@@ -1,14 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 __author__ = "David S. Batista"
-__email__ = "dsbatista@inesc-id.pt"
+__email__ = "dsbatista@gmail.com"
 
 import sys
 
 from nltk import pos_tag, word_tokenize
 
-from snowball.reverb import Reverb
+from snowball.reverb_breds import Reverb
 
 
 class Tuple(object):
@@ -50,9 +47,7 @@ class Tuple(object):
             sys.exit(0)
 
     def __str__(self):
-        return str(
-            self.bef_words.encode("utf8") + " " + self.bet_words.encode("utf8") + " " + self.aft_words.encode("utf8")
-        )
+        return f"{self.bef_words}  {self.bet_words}  {self.aft_words}"
 
     def __eq__(self, other):
         return (
@@ -62,6 +57,9 @@ class Tuple(object):
             and self.bet_words == other.bet_words
             and self.aft_words == other.aft_words
         )
+
+    def __hash__(self) -> int:
+        return hash(self.e1) ^ hash(self.e2) ^ hash(self.bef_words) ^ hash(self.bet_words) ^ hash(self.aft_words)
 
     def get_vector(self, context):
         if context == "bef":
