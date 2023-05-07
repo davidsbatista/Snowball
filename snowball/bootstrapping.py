@@ -47,38 +47,32 @@ class Snowball:
 
         except IOError:
             print("\nGenerating relationship instances from sentences")
-            f_sentences = codecs.open(sentences_file, encoding="utf-8")
-            count = 0
-            for line in f_sentences:
-                count += 1
-                if count % 10000 == 0:
-                    sys.stdout.write(".")
-                sentence = Sentence(
-                    line.strip(),
-                    self.config.e1_type,
-                    self.config.e2_type,
-                    self.config.max_tokens_away,
-                    self.config.min_tokens_away,
-                    self.config.context_window_size,
-                )
+            with codecs.open(sentences_file, encoding="utf-8") as f_sentences:
+                for line in f_sentences:
+                    sentence = Sentence(
+                        line.strip(),
+                        self.config.e1_type,
+                        self.config.e2_type,
+                        self.config.max_tokens_away,
+                        self.config.min_tokens_away,
+                        self.config.context_window_size,
+                    )
 
-                for rel in sentence.relationships:
-                    if rel.arg1type == self.config.e1_type and rel.arg2type == self.config.e2_type:
-                        bef_tokens = word_tokenize(rel.before)
-                        bet_tokens = word_tokenize(rel.between)
-                        aft_tokens = word_tokenize(rel.after)
-                        if not (bef_tokens == 0 and bet_tokens == 0 and aft_tokens == 0):
-                            t = SnowballTuple(
-                                rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config
-                            )
-                            self.processed_tuples.append(t)
-            f_sentences.close()
+                    for rel in sentence.relationships:
+                        if rel.arg1type == self.config.e1_type and rel.arg2type == self.config.e2_type:
+                            bef_tokens = word_tokenize(rel.before)
+                            bet_tokens = word_tokenize(rel.between)
+                            aft_tokens = word_tokenize(rel.after)
+                            if not (bef_tokens == 0 and bet_tokens == 0 and aft_tokens == 0):
+                                t = SnowballTuple(
+                                    rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config
+                                )
+                                self.processed_tuples.append(t)
 
             print("\n", len(self.processed_tuples), "relationships generated")
             print("Dumping relationships to file")
-            f = open("processed_tuples.pkl", "wb")
-            pickle.dump(self.processed_tuples, f)
-            f.close()
+            with open("processed_tuples.pkl", "wb") as f:
+                pickle.dump(self.processed_tuples, f)
 
     def init_bootstrap(self, tuples):
         # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
@@ -216,17 +210,16 @@ class Snowball:
                 i += 1
 
         print("\nWriting extracted relationships to disk")
-        f_output = open("relationships.txt", "w")
-        tmp = sorted(self.candidate_tuples, key=lambda tpl: tpl.confidence, reverse=True)
-        for t in tmp:
-            f_output.write("instance: " + t.ent1 + "\t" + t.ent2 + "\tscore:" + str(t.confidence) + "\n")
-            f_output.write("sentence: " + t.sentence + "\n")
-            if t.passive_voice is False or t.passive_voice is None:
-                f_output.write("passive voice: False\n")
-            elif t.passive_voice is True:
-                f_output.write("passive voice: True\n")
-            f_output.write("\n")
-        f_output.close()
+        with open("relationships.txt", "wt", encoding="utf8") as f_output:
+            tmp = sorted(self.candidate_tuples, key=lambda tpl: tpl.confidence, reverse=True)
+            for t in tmp:
+                f_output.write("instance: " + t.ent1 + "\t" + t.ent2 + "\tscore:" + str(t.confidence) + "\n")
+                f_output.write("sentence: " + t.sentence + "\n")
+                if t.passive_voice is False or t.passive_voice is None:
+                    f_output.write("passive voice: False\n")
+                elif t.passive_voice is True:
+                    f_output.write("passive voice: True\n")
+                f_output.write("\n")
 
     def similarity(self, tpl, extraction_pattern):
         """
@@ -286,8 +279,8 @@ class Snowball:
         """
         checks if an extracted tuple matches seeds tuples
         """
-        matched_tuples = list()
-        count_matches = dict()
+        matched_tuples = []
+        count_matches = {}
         for t in self.processed_tuples:
             for s in self.config.seed_tuples:
                 if t.ent1 == s.ent1 and t.ent2 == s.ent2:
