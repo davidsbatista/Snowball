@@ -2,63 +2,85 @@ __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
 import re
+from typing import Any, Dict, List, Set, Tuple
 
 from nltk import word_tokenize
+from nltk.corpus import stopwords
 
-# regex to extract entities, e.g.: <PERSON>John Smith</PERSON>
-ent_regex = re.compile("<[A-Z]+>[^<]+</[A-Z]+>", re.U)
+# tokens between entities which do not represent relationships
+bad_tokens = [",", "(", ")", ";", "''", "``", "'s", "-", "vs.", "v", "'", ":", ".", "--"]
+stopwords = stopwords.words("english")
+not_valid = bad_tokens + stopwords
+regex_clean_tags = re.compile("</?[A-Z]+>", re.U)
 
 
-class Relationship:
-    # pylint: disable=too-many-instance-attributes
+def tokenize_entity(entity: str) -> List[str]:
+    """Simple poor man's tokenization of an entity string"""
+    parts = word_tokenize(entity)
+    if parts[-1] == ".":
+        replace = parts[-2] + parts[-1]
+        del parts[-1]
+        del parts[-1]
+        parts.append(replace)
+    return parts
+
+
+def find_locations(entity_string: str, text_tokens: List[str]) -> Tuple[List[str], List[int]]:
+    """Find the locations of an entity in a text."""
+    locations = []
+    ent_parts = tokenize_entity(entity_string)
+    for idx in range(len(text_tokens)):
+        if text_tokens[idx : idx + len(ent_parts)] == ent_parts:
+            locations.append(idx)
+    return ent_parts, locations
+
+
+class Entity:
+    """Entity class to hold information about an entity extracted from a sentence."""
+
+    def __init__(
+        self, surface_string: str, surface_string_parts: List[str], ent_type: str, locations: List[int]
+    ) -> None:
+        self.string = surface_string
+        self.parts = surface_string_parts
+        self.type = ent_type
+        self.locations = locations
+
+    def __hash__(self) -> int:
+        return hash(self.string) ^ hash(self.type)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Entity):
+            return NotImplemented
+        return self.string == other.string and self.type == other.type
+
+
+class Relationship:  # pylint: disable=too-many-arguments, too-many-instance-attributes
     """Relationship class to hold information about a relationship extracted from a sentence."""
 
     def __init__(
         self,
-        _sentence,
-        _before=None,
-        _between=None,
-        _after=None,
-        _ent1=None,
-        _ent2=None,
-        _arg1type=None,
-        _arg2type=None,
-        _type=None,
-    ):
-        self.sentence = _sentence
-        self.rel_type = _type
-        self.before = _before
-        self.between = _between
-        self.after = _after
-        self.ent1 = _ent1
-        self.ent2 = _ent2
-        self.arg1type = _arg1type
-        self.arg2type = _arg2type
+        sentence: str,
+        before: List[Tuple[str, str]],
+        between: List[Tuple[str, str]],
+        after: List[Tuple[str, str]],
+        ent1_str: str,
+        ent2_str: str,
+        e1_type: str,
+        e2_type: str,
+    ) -> None:
+        self.sentence = sentence
+        self.before = before
+        self.between = between
+        self.after = after
+        self.ent1 = ent1_str
+        self.ent2 = ent2_str
+        self.e1_type = e1_type
+        self.e2_type = e2_type
 
-        if _before is None and _between is None and _after is None and _sentence is not None:
-            matches = list(re.finditer(ent_regex, self.sentence))
-
-            for match_idx in range(0, len(matches) - 1):
-                if match_idx == 0:
-                    start = 0
-                if match_idx > 0:
-                    start = matches[match_idx - 1].end()
-                try:
-                    end = matches[match_idx + 2].init_bootstrapp()
-                except IndexError:
-                    end = len(self.sentence) - 1
-
-                self.before = self.sentence[start : matches[match_idx].init_bootstrapp()]
-                self.between = self.sentence[matches[match_idx].end() : matches[match_idx + 1].init_bootstrapp()]
-                self.after = self.sentence[matches[match_idx + 1].end() : end]
-                self.ent1 = matches[match_idx].group()
-                self.ent2 = matches[match_idx + 1].group()
-                arg1match = re.match("<[A-Z]+>", self.ent1)
-                arg2match = re.match("<[A-Z]+>", self.ent2)
-                self.arg1type = arg1match.group()[1:-1]
-                self.arg2type = arg2match.group()[1:-1]
-
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Relationship):
+            return NotImplemented
         return (
             self.ent1 == other.ent1
             and self.before == other.before
@@ -66,70 +88,82 @@ class Relationship:
             and self.after == other.after
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.ent1) ^ hash(self.ent2) ^ hash(self.before) ^ hash(self.between) ^ hash(self.after)
 
 
-class Sentence:
-    # pylint: disable=too-few-public-methods
-    """
-    Sentence class to hold information about a sentence.
-    """
+class Sentence:  # pylint: disable=too-few-public-methods, too-many-locals, too-many-arguments
+    """Holds information about a sentence extracted from a document."""
 
-    def __init__(self, _sentence, e1_type, e2_type, max_tokens, min_tokens, window_size):  # noqa: C901
-        # pylint: disable=too-many-locals, too-many-arguments
-        self.relationships = set()
-        self.sentence = _sentence
-        matches = list(re.finditer(ent_regex, self.sentence))
+    def __init__(
+        self,
+        sentence: str,
+        e1_type: str,
+        e2_type: str,
+        max_tokens: int,
+        min_tokens: int,
+        window_size: int,
+        pos_tagger: Any = None,
+    ):  # noqa: C901
+        self.relationships = []
+        self.tagged_text = None
+        self.entities_regex = re.compile("<[A-Z]+>[^<]+</[A-Z]+>", re.U)
+        entities = list(re.finditer(self.entities_regex, sentence))
 
-        if len(matches) >= 2:
-            for match_idx in range(0, len(matches) - 1):
-                if match_idx == 0:
-                    start = 0
-                if match_idx > 0:
-                    start = matches[match_idx - 1].end()
-                try:
-                    end = matches[match_idx + 2].start()
-                except IndexError:
-                    end = len(self.sentence) - 1
+        if len(entities) >= 2:
+            sentence_no_tags = re.sub(regex_clean_tags, "", sentence)  # clean tags from text
+            text_tokens = word_tokenize(sentence_no_tags)
 
-                before = self.sentence[start : matches[match_idx].start()]
-                between = self.sentence[matches[match_idx].end() : matches[match_idx + 1].start()]
-                after = self.sentence[matches[match_idx + 1].end() : end]
+            # extract information about the entity, create an Entity instance
+            # and store in a structure to hold information collected about
+            # all the entities in the sentence
+            entities_info: Set[Entity] = set()
+            for ent in entities:
+                entity = ent.group()
+                e_string = re.findall("<[A-Z]+>([^<]+)</[A-Z]+>", entity)[0]
+                e_type = re.findall("<([A-Z]+)", entity)[0]
+                e_parts, ent_locations = find_locations(e_string, text_tokens)
+                entities_info.add(Entity(e_string, e_parts, e_type, ent_locations))
 
-                # select 'window_size' tokens from left and right context
-                before = word_tokenize(before)[-window_size:]
-                after = word_tokenize(after)[:window_size]
-                before = " ".join(before)
-                after = " ".join(after)
+            # create a hash table:
+            #   key: is the starting index in the tokenized sentence of an entity
+            #   value: the corresponding Entity instance
+            locations: Dict[int, Entity] = {
+                start: entity_obj for entity_obj in entities_info for start in entity_obj.locations
+            }
 
-                # only consider relationships where the distance between the two entities
-                # is less than 'max_tokens' and greater than 'min_tokens'
-                number_bet_tokens = len(word_tokenize(between))
-                if not number_bet_tokens > max_tokens and not number_bet_tokens < min_tokens:
-                    ent1 = matches[match_idx].group()
-                    ent2 = matches[match_idx + 1].group()
-                    arg1match = re.match("<[A-Z]+>", ent1)
-                    arg2match = re.match("<[A-Z]+>", ent2)
-                    ent1 = re.sub("</?[A-Z]+>", "", ent1, count=2, flags=0)
-                    ent2 = re.sub("</?[A-Z]+>", "", ent2, count=2, flags=0)
-                    arg1type = arg1match.group()[1:-1]
-                    arg2type = arg2match.group()[1:-1]
+            # look for a pair of entities such that:
+            # the distance between the two entities is less than 'max_tokens'
+            # and greater than 'min_tokens'
+            # the arguments match the seeds semantic types
+            sorted_keys = list(sorted(locations))
 
-                    if ent1 == ent2:
+            for i in range(len(sorted_keys) - 1):
+                distance = sorted_keys[i + 1] - sorted_keys[i]
+                ent1 = locations[sorted_keys[i]]
+                ent2 = locations[sorted_keys[i + 1]]
+
+                # ignore relationships between the same entity
+                if max_tokens >= distance >= min_tokens and ent1.type == e1_type and ent2.type == e2_type:
+                    if ent1.string == ent2.string:
                         continue
 
-                    if e1_type is not None and e2_type is not None:
-                        # restrict relationships by the arguments semantic types
-                        if arg1type == e1_type and arg2type == e2_type:
-                            rel = Relationship(
-                                _sentence, before, between, after, ent1, ent2, arg1type, arg2type, _type=None
-                            )
-                            self.relationships.add(rel)
+                    # run PoS-tagger over the sentence only once
+                    if self.tagged_text is None:
+                        # split text into tokens and tag them using NLTK's default English tagger
+                        # POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/
+                        # english.pickle'
+                        self.tagged_text = pos_tagger.tag(text_tokens)
 
-                    elif e1_type is None and e2_type is None:
-                        # create all possible relationship types
-                        rel = Relationship(
-                            _sentence, before, between, after, ent1, ent2, arg1type, arg2type, _type=None
-                        )
-                        self.relationships.add(rel)
+                    before = self.tagged_text[: sorted_keys[i]]
+                    before = before[-window_size:]
+                    between = self.tagged_text[sorted_keys[i] + len(ent1.parts) : sorted_keys[i + 1]]
+                    after = self.tagged_text[sorted_keys[i + 1] + len(ent2.parts) :]
+                    after = after[:window_size]
+
+                    # ignore relationships where BET context is only stopwords or other invalid words
+                    if all(x in not_valid for x in text_tokens[sorted_keys[i] + len(ent1.parts) : sorted_keys[i + 1]]):
+                        continue
+
+                    rel = Relationship(sentence, before, between, after, ent1.string, ent2.string, e1_type, ent2.type)
+                    self.relationships.append(rel)

@@ -4,6 +4,12 @@ __email__ = "dsbatista@gmail.com"
 import sys
 from copy import deepcopy
 from math import log
+from typing import Optional
+
+import numpy as np
+
+from snowball.config import Config
+from snowball.snowball_tuple import SnowballTuple
 
 
 class Pattern:
@@ -12,11 +18,11 @@ class Pattern:
     A pattern is a set of tuples that is used to extract relationships between named-entities.
     """
 
-    def __init__(self, tpl=None):
-        self.positive = 0
-        self.negative = 0
-        self.unknown = 0
-        self.confidence = 0
+    def __init__(self, tpl: Optional[SnowballTuple] = None) -> None:
+        self.positive: int = 0
+        self.negative: int = 0
+        self.unknown: int = 0
+        self.confidence: int = 0
         self.tuples = []
         self.tuple_patterns = set()
         self.centroid_bef = []
@@ -28,16 +34,16 @@ class Pattern:
             self.centroid_bet = tpl.bet_vector
             self.centroid_aft = tpl.aft_vector
 
-    def __str__(self):
+    def __str__(self) -> str:
         output = ""
         for tpl in self.tuples:
             output += str(tpl) + "|"
         return output
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return set(self.tuples) == set(other.tuples)
 
-    def update_confidence_2003(self, config):
+    def update_confidence_2003(self, config: "Config") -> None:
         """
         Update the confidence of the pattern
         """
@@ -48,21 +54,21 @@ class Pattern:
         elif self.positive == 0:
             self.confidence = 0
 
-    def update_confidence(self):
+    def update_confidence(self) -> None:
         """
         Update the confidence of the pattern
         """
         if self.positive > 0 or self.negative > 0:
             self.confidence = float(self.positive) / float(self.positive + self.negative)
 
-    def add_tuple(self, tpl):
+    def add_tuple(self, tpl) -> None:
         """
         Add another tuple to be used to generate the pattern
         """
         self.tuples.append(tpl)
         self.updated_centroid()
 
-    def update_selectivity(self, tpl, config):
+    def update_selectivity(self, tpl: SnowballTuple, config: Config) -> None:
         """
         Update the selectivity of the pattern
         """
@@ -82,7 +88,7 @@ class Pattern:
         # self.update_confidence()
         self.update_confidence_2003(config)
 
-    def merge_tuple_patterns(self):
+    def merge_tuple_patterns(self) -> None:
         """
         Merge all tuple patterns into one
         """
@@ -90,7 +96,7 @@ class Pattern:
         for tpl in self.tuples:
             self.tuple_patterns.add(tpl.bet_words)
 
-    def updated_centroid(self):
+    def updated_centroid(self) -> None:
         """
         Calculate the centroid of a pattern
         """
@@ -106,7 +112,7 @@ class Pattern:
             self.centroid_bet = self.calculate_centroid("bet")
             self.centroid_aft = self.calculate_centroid("aft")
 
-    def calculate_centroid(self, context):  # noqa: C901
+    def calculate_centroid(self, context: str) -> np.array:  # noqa: C901
         # pylint: disable=too-many-nested-blocks
         """
         Calculate the centroid of a pattern

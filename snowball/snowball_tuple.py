@@ -1,9 +1,8 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
-import sys
-
-from nltk import pos_tag, word_tokenize
+import numpy as np
+from nltk import word_tokenize
 
 from snowball.reverb_breds import Reverb
 
@@ -15,6 +14,10 @@ class SnowballTuple:
 
     see: http://www.ling.upenn.edu/courses/Fall_2007/ling001/penn_treebank_pos.html
     select everything except stopwords, ADJ and ADV
+
+    # construct TF-IDF vectors with the words part of a ReVerb pattern
+    # or if no ReVerb patterns with selected words from the contexts
+
     """
 
     filter_pos = ["JJ", "JJR", "JJS", "RB", "RBR", "RBS", "WRB"]
@@ -38,18 +41,12 @@ class SnowballTuple:
         self.passive_voice = None
 
         if config.use_reverb == "yes":
-            # construct TF-IDF vectors with the words part of a ReVerb pattern
-            # or if no ReVerb patterns with selected words from the contexts
             self.extract_patterns(config)
 
         elif config.use_reverb == "no":
             self.bef_vector = self.create_vector(self.bef_words)
             self.bet_vector = self.create_vector(self.bet_words)
             self.aft_vector = self.create_vector(self.aft_words)
-
-        else:
-            print("use_reverb configuration parameter not set")
-            sys.exit(0)
 
     def __str__(self):
         return f"{self.bef_words}  {self.bet_words}  {self.aft_words}"
@@ -64,7 +61,7 @@ class SnowballTuple:
         )
 
     def __hash__(self) -> int:
-        return hash(self.ent1) ^ hash(self.ent2) ^ hash(self.bef_words) ^ hash(self.bet_words) ^ hash(self.aft_words)
+        return hash(self.ent1) ^ hash(self.ent2)
 
     def get_vector(self, context):
         """
@@ -77,7 +74,7 @@ class SnowballTuple:
         # ToDo: can only be "aft" here
         return self.aft_vector
 
-    def create_vector(self, text):
+    def create_vector(self, text: str) -> np.array:
         """
         Create a TF-IDF vector for the given text
         """
@@ -100,31 +97,27 @@ class SnowballTuple:
             vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
             return self.config.vsm.tf_idf_model[vect_ids]
 
-    def construct_words_vectors(self, words, config):  # pylint: disable=inconsistent-return-statements
+    def construct_words_vectors(self, words, config):
         """
         Construct TF-IDF representation for each context
-        split text into tokens and tag them using NLTK's default English tagger
-        POS_TAGGER = 'taggers/maxent_treebank_pos_tagger/english.pickle'
         """
-        text_tokens = word_tokenize(words)
-        tags_ptb = pos_tag(text_tokens)
-        pattern = [t[0] for t in tags_ptb if t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
-        if len(pattern) >= 1:
-            vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
-            return self.config.vsm.tf_idf_model[vect_ids]
+        tokens, tags = zip(*words)
+        pattern = [
+            token
+            for token, tag in zip(tokens, tags)
+            if token.lower() not in config.stopwords and tag not in self.filter_pos
+        ]
+        vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
+        return self.config.vsm.tf_idf_model[vect_ids]
 
     def extract_patterns(self, config):
         """
-        Extract ReVerb patterns and construct TF-IDF vectors for each context, it also detects the
-        presence of the passive voice.
+        Extract ReVerb patterns for the BET context detecting the passive voice and construct TF-IDF vectors.
         """
 
-        patterns_bet_tags = Reverb.extract_reverb_patterns_ptb(self.bet_words)
-        if len(patterns_bet_tags) > 0:
+        if patterns_bet_tags := Reverb.extract_reverb_patterns_tagged_ptb(self.bet_words):
             self.passive_voice = self.config.reverb.detect_passive_voice(patterns_bet_tags)
-            # forced hack since _'s_ is always tagged as VBZ, (u"'s", 'VBZ') and
-            # causes ReVerb to identify a pattern which is wrong, if this happens, ignore
-            # that a pattern was extracted
+            # 's_ is always wrongly tagged as VBZ, if the first word is 's' ignore it
             if patterns_bet_tags[0][0] == "'s":
                 self.bet_vector = self.construct_words_vectors(self.bet_words, config)
             else:

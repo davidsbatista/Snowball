@@ -1,16 +1,17 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
-import codecs
 import operator
+import os
 import pickle
 import sys
 from collections import defaultdict
 
 from gensim.matutils import cossim
-from nltk import word_tokenize
+from nltk.data import load
 from tqdm import tqdm
 
+from snowball.commons import blocks
 from snowball.config import Config
 from snowball.pattern import Pattern
 from snowball.seed import Seed
@@ -28,19 +29,117 @@ class Snowball:
         self.candidate_tuples = defaultdict(list)
         self.config = Config(config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence)
 
+    def write_relationships_to_disk(self):
+        """Write extracted relationships to disk"""
+        print("\nWriting extracted relationships to disk")
+        with open("relationships.txt", "wt", encoding="utf8") as f_output:
+            tmp = sorted(self.candidate_tuples, key=lambda tpl: tpl.confidence, reverse=True)
+            for tpl in tmp:
+                f_output.write("instance: " + tpl.ent1 + "\t" + tpl.ent2 + "\tscore:" + str(tpl.confidence) + "\n")
+                f_output.write("sentence: " + tpl.sentence + "\n")
+                if tpl.passive_voice is False or tpl.passive_voice is None:
+                    f_output.write("passive voice: False\n")
+                elif tpl.passive_voice is True:
+                    f_output.write("passive voice: True\n")
+                f_output.write("\n")
+
+    def debug_patterns(self):
+        """
+        Print patterns to stdout
+        """
+        if PRINT_PATTERNS is True:
+            print("\nPatterns:")
+            for pattern in self.patterns:
+                pattern.merge_tuple_patterns()
+                print("Patterns:", len(pattern.tuples))
+                print("Positive", pattern.positive)
+                print("Negative", pattern.negative)
+                print("Unknown", pattern.unknown)
+                print("Tuples", len(pattern.tuples))
+                print("Pattern Confidence", pattern.confidence)
+                print("\n")
+
+    def similarity(self, tpl, extraction_pattern):
+        """
+        Calculate the similarity between a tuple and an extraction pattern
+        """
+        (bef, bet, aft) = (0, 0, 0)
+
+        if tpl.bef_vector is not None and extraction_pattern.centroid_bef is not None:
+            bef = cossim(tpl.bef_vector, extraction_pattern.centroid_bef)
+
+        if tpl.bet_vector is not None and extraction_pattern.centroid_bet is not None:
+            bet = cossim(tpl.bet_vector, extraction_pattern.centroid_bet)
+
+        if tpl.aft_vector is not None and extraction_pattern.centroid_aft is not None:
+            aft = cossim(tpl.aft_vector, extraction_pattern.centroid_aft)
+
+        return self.config.alpha * bef + self.config.beta * bet + self.config.gamma * aft
+
+    def cluster_tuples(self, matched_tuples):
+        """
+        single-pass clustering
+        """
+        start = 0
+        # initialize: if no patterns exist, first tuple goes to first cluster
+        if len(self.patterns) == 0:
+            self.patterns.append(Pattern(matched_tuples[0]))
+            start = 1
+
+        # compute the similarity between an instance with each pattern go through all tuples
+        for i in range(start, len(matched_tuples), 1):
+            tpl = matched_tuples[i]
+            max_similarity = 0
+            max_similarity_cluster_index = 0
+
+            # go through all patterns(clusters of tuples) and find the one with the highest similarity score
+            for pattern_idx in range(0, len(self.patterns), 1):
+                extraction_pattern = self.patterns[pattern_idx]
+                score = self.similarity(tpl, extraction_pattern)
+                if score > max_similarity:
+                    max_similarity = score
+                    max_similarity_cluster_index = pattern_idx
+
+            # if max_similarity < min_degree_match create a new cluster having this tuple as the centroid
+            if max_similarity < self.config.threshold_similarity:
+                self.patterns.append(Pattern(tpl))
+
+            # if max_similarity >= min_degree_match add to the cluster with the highest similarity
+            else:
+                self.patterns[max_similarity_cluster_index].add_tuple(tpl)
+
+    def match_seeds_tuples(self):
+        """
+        Checks if an extracted tuple matches seeds tuples
+        """
+        matched_tuples = []
+        count_matches = defaultdict(int)
+        for tpl in self.processed_tuples:
+            for seed in self.config.positive_seeds:
+                if tpl.ent1 == seed.ent1 and tpl.ent2 == seed.ent2:
+                    matched_tuples.append(tpl)
+                    count_matches[(tpl.ent1, tpl.ent2)] += 1
+
+        return count_matches, matched_tuples
+
     def generate_tuples(self, sentences_file):
         """
         Generate tuples instances from a text file with sentences where named entities are already tagged
         """
-        try:
+        if os.path.exists("processed_tuples.pkl"):
             with open("processed_tuples.pkl", "rb") as f_in:
                 print("\nLoading processed tuples from disk...")
                 self.processed_tuples = pickle.load(f_in)
                 print(len(self.processed_tuples), "tuples loaded")
-        except IOError:
+        else:
             print("\nGenerating relationship instances from sentences")
-            with codecs.open(sentences_file, encoding="utf-8") as f_sentences:
-                for line in f_sentences:
+            tagger = load("taggers/maxent_treebank_pos_tagger/english.pickle")
+
+            with open(sentences_file, "r", encoding="utf8") as f_in:
+                total = sum(bl.count("\n") for bl in blocks(f_in))
+
+            with open(sentences_file, encoding="utf-8") as f_sentences:
+                for line in tqdm(f_sentences, total=total):
                     sentence = Sentence(
                         line.strip(),
                         self.config.e1_type,
@@ -48,18 +147,15 @@ class Snowball:
                         self.config.max_tokens_away,
                         self.config.min_tokens_away,
                         self.config.context_window_size,
+                        tagger,
                     )
 
                     for rel in sentence.relationships:
-                        if rel.arg1type == self.config.e1_type and rel.arg2type == self.config.e2_type:
-                            bef_tokens = word_tokenize(rel.before)
-                            bet_tokens = word_tokenize(rel.between)
-                            aft_tokens = word_tokenize(rel.after)
-                            if not (bef_tokens == 0 and bet_tokens == 0 and aft_tokens == 0):
-                                tpl = SnowballTuple(
-                                    rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config
-                                )
-                                self.processed_tuples.append(tpl)
+                        if rel.e1_type == self.config.e1_type and rel.e2_type == self.config.e2_type:
+                            tpl = SnowballTuple(
+                                rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config
+                            )
+                            self.processed_tuples.append(tpl)
 
             print(f"\n{len(self.processed_tuples)} relationships generated")
             print("Dumping relationships to file")
@@ -189,123 +285,4 @@ class Snowball:
                 # increment the number of iterations
                 i += 1
 
-        print("\nWriting extracted relationships to disk")
-        with open("relationships.txt", "wt", encoding="utf8") as f_output:
-            tmp = sorted(self.candidate_tuples, key=lambda tpl: tpl.confidence, reverse=True)
-            for tpl in tmp:
-                f_output.write("instance: " + tpl.ent1 + "\t" + tpl.ent2 + "\tscore:" + str(tpl.confidence) + "\n")
-                f_output.write("sentence: " + tpl.sentence + "\n")
-                if tpl.passive_voice is False or tpl.passive_voice is None:
-                    f_output.write("passive voice: False\n")
-                elif tpl.passive_voice is True:
-                    f_output.write("passive voice: True\n")
-                f_output.write("\n")
-
-    def debug_patterns(self):
-        """
-        Print patterns to stdout
-        """
-        if PRINT_PATTERNS is True:
-            print("\nPatterns:")
-            for pattern in self.patterns:
-                pattern.merge_tuple_patterns()
-                print("Patterns:", len(pattern.tuples))
-                print("Positive", pattern.positive)
-                print("Negative", pattern.negative)
-                print("Unknown", pattern.unknown)
-                print("Tuples", len(pattern.tuples))
-                print("Pattern Confidence", pattern.confidence)
-                print("\n")
-
-    def similarity(self, tpl, extraction_pattern):
-        """
-        Calculate the similarity between a tuple and an extraction pattern
-        """
-        (bef, bet, aft) = (0, 0, 0)
-
-        if tpl.bef_vector is not None and extraction_pattern.centroid_bef is not None:
-            bef = cossim(tpl.bef_vector, extraction_pattern.centroid_bef)
-
-        if tpl.bet_vector is not None and extraction_pattern.centroid_bet is not None:
-            bet = cossim(tpl.bet_vector, extraction_pattern.centroid_bet)
-
-        if tpl.aft_vector is not None and extraction_pattern.centroid_aft is not None:
-            aft = cossim(tpl.aft_vector, extraction_pattern.centroid_aft)
-
-        return self.config.alpha * bef + self.config.beta * bet + self.config.gamma * aft
-
-    def cluster_tuples(self, matched_tuples):
-        """
-        single-pass clustering
-        """
-        start = 0
-        # initialize: if no patterns exist, first tuple goes to first cluster
-        if len(self.patterns) == 0:
-            self.patterns.append(Pattern(matched_tuples[0]))
-            start = 1
-
-        # compute the similarity between an instance with each pattern go through all tuples
-        for i in range(start, len(matched_tuples), 1):
-            tpl = matched_tuples[i]
-            max_similarity = 0
-            max_similarity_cluster_index = 0
-
-            # go through all patterns(clusters of tuples) and find the one with the highest similarity score
-            for pattern_idx in range(0, len(self.patterns), 1):
-                extraction_pattern = self.patterns[pattern_idx]
-                score = self.similarity(tpl, extraction_pattern)
-                if score > max_similarity:
-                    max_similarity = score
-                    max_similarity_cluster_index = pattern_idx
-
-            # if max_similarity < min_degree_match create a new cluster having this tuple as the centroid
-            if max_similarity < self.config.threshold_similarity:
-                self.patterns.append(Pattern(tpl))
-
-            # if max_similarity >= min_degree_match add to the cluster with the highest similarity
-            else:
-                self.patterns[max_similarity_cluster_index].add_tuple(tpl)
-
-    def match_seeds_tuples(self):
-        """
-        Checks if an extracted tuple matches seeds tuples
-        """
-        matched_tuples = []
-        count_matches = defaultdict(int)
-        for tpl in self.processed_tuples:
-            for seed in self.config.positive_seeds:
-                if tpl.ent1 == seed.ent1 and tpl.ent2 == seed.ent2:
-                    matched_tuples.append(tpl)
-                    count_matches[(tpl.ent1, tpl.ent2)] += 1
-
-        return count_matches, matched_tuples
-
-
-def main():
-    # pylint: disable=missing-function-docstring
-    if len(sys.argv) != 7:
-        print(
-            "\nSnowball.py paramters.cfg sentences_file seeds_file_positive seeds_file_negative similarity_threshold"
-            " confidance_threshold\n"
-        )
-        sys.exit(0)
-    else:
-        configuration = sys.argv[1]
-        sentences_file = sys.argv[2]
-        seeds_file = sys.argv[3]
-        negative_seeds = sys.argv[4]
-        similarity = sys.argv[5]
-        confidence = sys.argv[6]
-
-        snowball = Snowball(
-            configuration, seeds_file, negative_seeds, sentences_file, float(similarity), float(confidence)
-        )
-        if sentences_file.endswith(".pkl"):
-            snowball.init_bootstrap(tuples=sentences_file)
-        else:
-            snowball.generate_tuples(sentences_file)
-            snowball.init_bootstrap(tuples=None)
-
-
-if __name__ == "__main__":
-    main()
+        self.write_relationships_to_disk()

@@ -2,6 +2,7 @@ __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
 import fileinput
+import os
 import pickle
 from typing import Any, Set
 
@@ -112,15 +113,13 @@ class Config:
         print("iteration wUpdt      :", self.w_updt)
         print("\n")
 
-        try:
+        if os.path.exists("vsm.pkl"):
             print("\nLoading TF-IDF model from disk...")
             with open("vsm.pkl", "rb") as f_in:
                 self.vsm = pickle.load(f_in)
-
-        except IOError:
+        else:
             print("\nGenerating tf-idf model from sentences...")
             self.vsm = VectorSpaceModel(sentences_file, self.stopwords)
-            print("\nWriting generated model to disk...")
             with open("vsm.pkl", "wb") as f_out:
                 pickle.dump(self.vsm, f_out)
 
