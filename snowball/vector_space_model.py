@@ -27,7 +27,6 @@ class VectorSpaceModel:
 
         with open(sentences_file, "rt", encoding="utf8") as f_sentences:
             documents = []
-            print("Gathering sentences and removing stopwords")
             for sentence in tqdm(f_sentences, total=total):
                 sentence_clean = re.sub("<[A-Z]+>[^<]+</[A-Z]+>", "", sentence)
                 document = [word for word in word_tokenize(sentence_clean.lower()) if word not in stopwords]

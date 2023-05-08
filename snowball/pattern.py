@@ -4,7 +4,7 @@ __email__ = "dsbatista@gmail.com"
 import sys
 from copy import deepcopy
 from math import log
-from typing import Optional
+from typing import Optional, List, Set, Any
 
 import numpy as np
 
@@ -18,17 +18,17 @@ class Pattern:
     A pattern is a set of tuples that is used to extract relationships between named-entities.
     """
 
-    def __init__(self, tpl: Optional[SnowballTuple] = None) -> None:
+    def __init__(self, tpl: Optional[SnowballTuple]) -> None:
         self.positive: int = 0
         self.negative: int = 0
         self.unknown: int = 0
-        self.confidence: int = 0
-        self.tuples = []
-        self.tuple_patterns = set()
+        self.confidence: float = 0.0
+        self.tuples: List[SnowballTuple] = []
+        self.tuple_patterns: Set[Any] = set()
         self.centroid_bef = []
         self.centroid_bet = []
         self.centroid_aft = []
-        if tuple is not None:
+        if tpl is not None:
             self.tuples.append(tpl)
             self.centroid_bef = tpl.bef_vector
             self.centroid_bet = tpl.bet_vector
@@ -40,7 +40,9 @@ class Pattern:
             output += str(tpl) + "|"
         return output
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Pattern):
+            return False
         return set(self.tuples) == set(other.tuples)
 
     def update_confidence_2003(self, config: "Config") -> None:
@@ -61,7 +63,7 @@ class Pattern:
         if self.positive > 0 or self.negative > 0:
             self.confidence = float(self.positive) / float(self.positive + self.negative)
 
-    def add_tuple(self, tpl) -> None:
+    def add_tuple(self, tpl: SnowballTuple) -> None:
         """
         Add another tuple to be used to generate the pattern
         """
@@ -98,21 +100,21 @@ class Pattern:
 
     def updated_centroid(self) -> None:
         """
-        Calculate the centroid of a pattern
+        Calculate the centroid of a pattern, based on the tuples associated with it.
+
+        If there is just one tuple associated with this pattern, the centroid is the tuple itself. Otherwise,
+        the centroid is the average of all tuples associated with this pattern.
         """
-        # it there just one tuple associated with this pattern centroid is the tuple
         if len(self.tuples) == 1:
-            tpl = self.tuples[0]
-            self.centroid_bef = tpl.bef_vector
-            self.centroid_bet = tpl.bet_vector
-            self.centroid_aft = tpl.aft_vector
+            self.centroid_bef = self.tuples[0].bef_vector
+            self.centroid_bet = self.tuples[0].bet_vector
+            self.centroid_aft = self.tuples[0].aft_vector
         else:
-            # if there are more tuples associated, calculate the average over all vectors
             self.centroid_bef = self.calculate_centroid("bef")
             self.centroid_bet = self.calculate_centroid("bet")
             self.centroid_aft = self.calculate_centroid("aft")
 
-    def calculate_centroid(self, context: str) -> np.array:  # noqa: C901
+    def calculate_centroid(self, context: str) -> Any:  # noqa: C901
         # pylint: disable=too-many-nested-blocks
         """
         Calculate the centroid of a pattern

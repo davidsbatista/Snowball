@@ -110,9 +110,12 @@ class SnowballTuple:
         vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
         return self.config.vsm.tf_idf_model[vect_ids]
 
-    def extract_patterns(self, config):
+    def extract_patterns(self, config) -> None:
         """
-        Extract ReVerb patterns for the BET context detecting the passive voice and construct TF-IDF vectors.
+        If a ReVerb pattern is found in the BET context it constructs a TF-IDF vector with the words part of the
+        pattern, otherwise uses all words filtering stopwords, ADJ and ADV.
+
+        For the BEF and AFT contexts it uses all words filtering stopwords, ADJ and ADV.
         """
 
         if patterns_bet_tags := Reverb.extract_reverb_patterns_tagged_ptb(self.bet_words):
