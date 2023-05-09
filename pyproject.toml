@@ -11,7 +11,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 keywords = ["nlp", "semantic relationship extraction", "bootstrapping", "emnlp",
     "tf-idf", ]
-license = {file = "LICENSE.txt"}
+license = "GNU GPLv3"
 classifiers = [
     "Topic :: Text Processing :: Linguistic",
     "Programming Language :: Python :: 3",

@@ -1,6 +1,8 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
+from typing import Any, List, Tuple, Optional
+
 import numpy as np
 from nltk import word_tokenize
 
@@ -22,15 +24,15 @@ class SnowballTuple:
 
     filter_pos = ["JJ", "JJR", "JJS", "RB", "RBR", "RBS", "WRB"]
 
-    def __init__(self, _e1, _e2, _sentence, _before, _between, _after, config):
-        self.ent1 = _e1
-        self.ent2 = _e2
-        self.sentence = _sentence
+    def __init__(self, ent1: str, ent2: str, sentence: str, before: str, between: str, after: str, config: Any) -> None:
+        self.ent1 = ent1
+        self.ent2 = ent2
+        self.sentence = sentence
         self.confidence = 0
         self.confidence_old = 0
-        self.bef_words = _before
-        self.bet_words = _between
-        self.aft_words = _after
+        self.bef_words = before
+        self.bet_words = between
+        self.aft_words = after
         self.config = config
         self.bef_vector = None
         self.bet_vector = None
@@ -44,14 +46,16 @@ class SnowballTuple:
             self.extract_patterns(config)
 
         elif config.use_reverb == "no":
-            self.bef_vector = self.create_vector(self.bef_words)
-            self.bet_vector = self.create_vector(self.bet_words)
-            self.aft_vector = self.create_vector(self.aft_words)
+            self.bef_vector = self.create_vector(self.bef_words) if self.bef_words else []
+            self.bet_vector = self.create_vector(self.bet_words) if self.bet_words else []
+            self.aft_vector = self.create_vector(self.aft_words) if self.aft_words else []
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.bef_words}  {self.bet_words}  {self.aft_words}"
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SnowballTuple):
+            return False
         return (
             self.ent1 == other.ent1
             and self.ent2 == other.ent2
@@ -63,7 +67,7 @@ class SnowballTuple:
     def __hash__(self) -> int:
         return hash(self.ent1) ^ hash(self.ent2)
 
-    def get_vector(self, context):
+    def get_vector(self, context: str) -> Optional[List[Tuple[int, float]]]:
         """
         Return the vector for the given context
         """
@@ -78,14 +82,10 @@ class SnowballTuple:
         """
         Create a TF-IDF vector for the given text
         """
-        vect_ids = self.config.vsm.dictionary.doc2bow(self.tokenize(text))
+        words, tags = zip(*text)
+        tokens = [word.lower() for word in words if word not in self.config.stopwords]
+        vect_ids = self.config.vsm.dictionary.doc2bow(tokens)
         return self.config.vsm.tf_idf_model[vect_ids]
-
-    def tokenize(self, text):
-        """
-        Tokenize text and remove stopwords
-        """
-        return [word for word in word_tokenize(text.lower()) if word not in self.config.stopwords]
 
     def construct_pattern_vector(self, pattern_tags, config):  # pylint: disable=inconsistent-return-statements
         """

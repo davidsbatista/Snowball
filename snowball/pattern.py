@@ -4,9 +4,7 @@ __email__ = "dsbatista@gmail.com"
 import sys
 from copy import deepcopy
 from math import log
-from typing import Optional, List, Set, Any
-
-import numpy as np
+from typing import Any, List, Optional, Set
 
 from snowball.config import Config
 from snowball.snowball_tuple import SnowballTuple
