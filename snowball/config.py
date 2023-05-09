@@ -28,6 +28,7 @@ class Config:
         sentences_file: str,
         similarity: float,
         confidence: float,
+        n_iterations: int,
     ) -> None:  # noqa: C901
         # pylint: disable=too-many-arguments, too-many-statements, too-many-branches
         self.positive_seeds: Set[SnowballTuple] = set()
@@ -38,6 +39,7 @@ class Config:
         self.threshold_similarity: float = similarity
         self.instance_confidence: float = confidence
         self.reverb: "Reverb" = Reverb()
+        self.number_iterations = n_iterations
 
         for line in fileinput.input(config_file):
             if line.startswith("#") or len(line) == 1:
@@ -51,9 +53,6 @@ class Config:
 
             if line.startswith("wNeg"):
                 self.w_neg = float(line.split("=")[1])
-
-            if line.startswith("number_iterations"):
-                self.number_iterations = int(line.split("=")[1])
 
             if line.startswith("use_RlogF"):
                 self.use_r_log_f = bool(line.split("=")[1])

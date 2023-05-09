@@ -154,6 +154,6 @@ class Pattern:
                 except AssertionError:
                     print("Error calculating extraction pattern centroid")
                     sys.exit(0)
-                centroid[i] = tuple(tmp)    # type: ignore
+                centroid[i] = tuple(tmp)  # type: ignore
 
         return centroid

@@ -58,7 +58,13 @@ def main() -> None:  # pylint: disable=missing-function-docstring
         sys.exit(1)
     args = parser.parse_args()
     snowball = Snowball(
-        args.config, args.positive_seeds, args.negative_seeds, args.sentences, args.similarity, args.confidence
+        args.config,
+        args.positive_seeds,
+        args.negative_seeds,
+        args.sentences,
+        args.similarity,
+        args.confidence,
+        args.iterations,
     )
 
     if args.sentences.endswith(".pkl"):

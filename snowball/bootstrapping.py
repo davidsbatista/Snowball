@@ -6,6 +6,7 @@ import os
 import pickle
 import sys
 from collections import defaultdict
+from typing import List
 
 from gensim.matutils import cossim
 from nltk.data import load
@@ -22,12 +23,21 @@ PRINT_PATTERNS = False
 
 
 class Snowball:
-    def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):
+    def __init__(
+        self,
+        config_file: str,
+        seeds_file: str,
+        negative_seeds: str,
+        sentences_file: str,
+        similarity: float,
+        confidence: float,
+        n_iterations: int,
+    ):
         # pylint: disable=too-many-arguments
-        self.patterns = []
+        self.patterns: List[Pattern] = []
         self.processed_tuples = []
         self.candidate_tuples = defaultdict(list)
-        self.config = Config(config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence)
+        self.config = Config(config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence, n_iterations)
 
     def write_relationships_to_disk(self):
         """Write extracted relationships to disk"""
