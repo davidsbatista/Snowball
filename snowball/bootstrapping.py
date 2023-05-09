@@ -6,7 +6,7 @@ import os
 import pickle
 import sys
 from collections import defaultdict
-from typing import List
+from typing import List, Dict, Tuple, Any
 
 from gensim.matutils import cossim
 from nltk.data import load
@@ -37,9 +37,11 @@ class Snowball:
         self.patterns: List[Pattern] = []
         self.processed_tuples = []
         self.candidate_tuples = defaultdict(list)
-        self.config = Config(config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence, n_iterations)
+        self.config = Config(
+            config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence, n_iterations
+        )
 
-    def write_relationships_to_disk(self):
+    def write_relationships_to_disk(self) -> None:
         """Write extracted relationships to disk"""
         print("\nWriting extracted relationships to disk")
         with open("relationships.txt", "wt", encoding="utf8") as f_output:
@@ -53,7 +55,7 @@ class Snowball:
                     f_output.write("passive voice: True\n")
                 f_output.write("\n")
 
-    def debug_patterns(self):
+    def debug_patterns(self) -> None:
         """
         Print patterns to stdout
         """
@@ -69,7 +71,7 @@ class Snowball:
                 print("Pattern Confidence", pattern.confidence)
                 print("\n")
 
-    def similarity(self, tpl, extraction_pattern):
+    def similarity(self, tpl: SnowballTuple, extraction_pattern: Pattern) -> float:
         """
         Calculate the similarity between a tuple and an extraction pattern
         """
@@ -118,12 +120,12 @@ class Snowball:
             else:
                 self.patterns[max_similarity_cluster_index].add_tuple(tpl)
 
-    def match_seeds_tuples(self):
+    def match_seeds_tuples(self) -> Tuple[Dict[Tuple[str, str], int], List[SnowballTuple]]:
         """
         Checks if an extracted tuple matches seeds tuples
         """
-        matched_tuples = []
-        count_matches = defaultdict(int)
+        matched_tuples: List[SnowballTuple] = []
+        count_matches: Dict[Tuple[str,str], int] = defaultdict(int)
         for tpl in self.processed_tuples:
             for seed in self.config.positive_seeds:
                 if tpl.ent1 == seed.ent1 and tpl.ent2 == seed.ent2:
@@ -132,7 +134,7 @@ class Snowball:
 
         return count_matches, matched_tuples
 
-    def generate_tuples(self, sentences_file):
+    def generate_tuples(self, sentences_file: str) -> None:
         """
         Generate tuples instances from a text file with sentences where named entities are already tagged
         """
@@ -172,7 +174,7 @@ class Snowball:
             with open("processed_tuples.pkl", "wb") as f_out:
                 pickle.dump(self.processed_tuples, f_out)
 
-    def init_bootstrap(self, tuples):  # noqa: C901
+    def init_bootstrap(self, tuples):   # noqa: C901
         # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
         """
         Starts a bootstrap iteration
