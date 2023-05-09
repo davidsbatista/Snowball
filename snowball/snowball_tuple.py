@@ -21,7 +21,16 @@ class SnowballTuple:
 
     filter_pos = ["JJ", "JJR", "JJS", "RB", "RBR", "RBS", "WRB"]
 
-    def __init__(self, ent1: str, ent2: str, sentence: str, before: str, between: str, after: str, config: Any) -> None:
+    def __init__(
+        self,
+        ent1: str,
+        ent2: str,
+        sentence: str,
+        before: List[Tuple[str, str]],
+        between: List[Tuple[str, str]],
+        after: List[Tuple[str, str]],
+        config: Any,
+    ) -> None:
         self.ent1 = ent1
         self.ent2 = ent2
         self.sentence = sentence
@@ -73,7 +82,7 @@ class SnowballTuple:
         # ToDo: can only be "aft" here
         return self.aft_vector
 
-    def create_vector(self, text: str) -> List[Tuple[int, float]]:
+    def create_vector(self, text: List[Tuple[str, str]]) -> List[Tuple[int, float]]:
         """
         Create a TF-IDF vector for the given text, this is only applies when ReVerb is not used to extract patterns.
         """
@@ -92,7 +101,7 @@ class SnowballTuple:
         vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
         return self.config.vsm.tf_idf_model[vect_ids]
 
-    def construct_words_vectors(self, words):
+    def construct_words_vectors(self, words: List[Tuple[str, str]]) -> List[Tuple[int, float]]:
         """
         Construct TF-IDF representation for each context
         """
