@@ -1,16 +1,13 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
-from typing import Any, List, Tuple, Optional
-
-import numpy as np
-from nltk import word_tokenize
+from typing import Any, List, Optional, Tuple
 
 from snowball.reverb_breds import Reverb
 
 
 class SnowballTuple:
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, too-many-arguments
     """
     Tuple class:
 
@@ -41,14 +38,12 @@ class SnowballTuple:
         self.bet_reverb_vector = None
         self.aft_reverb_vector = None
         self.passive_voice = None
-
-        if config.use_reverb == "yes":
-            self.extract_patterns(config)
-
-        elif config.use_reverb == "no":
+        if config.use_reverb == "no":
             self.bef_vector = self.create_vector(self.bef_words) if self.bef_words else []
             self.bet_vector = self.create_vector(self.bet_words) if self.bet_words else []
             self.aft_vector = self.create_vector(self.aft_words) if self.aft_words else []
+        else:
+            self.extract_patterns()
 
     def __str__(self) -> str:
         return f"{self.bef_words}  {self.bet_words}  {self.aft_words}"
@@ -78,26 +73,26 @@ class SnowballTuple:
         # ToDo: can only be "aft" here
         return self.aft_vector
 
-    def create_vector(self, text: str) -> np.array:
+    def create_vector(self, text: str) -> List[Tuple[int, float]]:
         """
-        Create a TF-IDF vector for the given text
+        Create a TF-IDF vector for the given text, this is only applies when ReVerb is not used to extract patterns.
         """
-        words, tags = zip(*text)
+        words, _ = zip(*text)
         tokens = [word.lower() for word in words if word not in self.config.stopwords]
         vect_ids = self.config.vsm.dictionary.doc2bow(tokens)
         return self.config.vsm.tf_idf_model[vect_ids]
 
-    def construct_pattern_vector(self, pattern_tags, config):  # pylint: disable=inconsistent-return-statements
+    def construct_pattern_vector(self, pattern_tags: List[Tuple[str, str]]) -> List[Tuple[int, float]]:
         """
         Construct TF-IDF representation for each context
         """
-        pattern = [t[0] for t in pattern_tags if t[0].lower() not in config.stopwords and t[1] not in self.filter_pos]
+        pattern = [
+            t[0] for t in pattern_tags if t[0].lower() not in self.config.stopwords and t[1] not in self.filter_pos
+        ]
+        vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
+        return self.config.vsm.tf_idf_model[vect_ids]
 
-        if len(pattern) >= 1:
-            vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
-            return self.config.vsm.tf_idf_model[vect_ids]
-
-    def construct_words_vectors(self, words, config):
+    def construct_words_vectors(self, words):
         """
         Construct TF-IDF representation for each context
         """
@@ -105,12 +100,12 @@ class SnowballTuple:
         pattern = [
             token
             for token, tag in zip(tokens, tags)
-            if token.lower() not in config.stopwords and tag not in self.filter_pos
+            if token.lower() not in self.config.stopwords and tag not in self.filter_pos
         ]
         vect_ids = self.config.vsm.dictionary.doc2bow(pattern)
         return self.config.vsm.tf_idf_model[vect_ids]
 
-    def extract_patterns(self, config) -> None:
+    def extract_patterns(self) -> None:
         """
         If a ReVerb pattern is found in the BET context it constructs a TF-IDF vector with the words part of the
         pattern, otherwise uses all words filtering stopwords, ADJ and ADV.
@@ -122,15 +117,15 @@ class SnowballTuple:
             self.passive_voice = self.config.reverb.detect_passive_voice(patterns_bet_tags)
             # 's_ is always wrongly tagged as VBZ, if the first word is 's' ignore it
             if patterns_bet_tags[0][0] == "'s":
-                self.bet_vector = self.construct_words_vectors(self.bet_words, config)
+                self.bet_vector = self.construct_words_vectors(self.bet_words)
             else:
-                self.bet_vector = self.construct_pattern_vector(patterns_bet_tags, config)
+                self.bet_vector = self.construct_pattern_vector(patterns_bet_tags)
         else:
-            self.bet_vector = self.construct_words_vectors(self.bet_words, config)
+            self.bet_vector = self.construct_words_vectors(self.bet_words)
 
         # extract two words before the first entity, and two words after the second entity
         if len(self.bef_words) > 0:
-            self.bef_vector = self.construct_words_vectors(self.bef_words, config)
+            self.bef_vector = self.construct_words_vectors(self.bef_words)
 
         if len(self.aft_words) > 0:
-            self.aft_vector = self.construct_words_vectors(self.aft_words, config)
+            self.aft_vector = self.construct_words_vectors(self.aft_words)
