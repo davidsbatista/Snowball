@@ -6,7 +6,7 @@ import os
 import pickle
 import sys
 from collections import defaultdict
-from typing import List, Dict, Tuple, Any
+from typing import Dict, List, Tuple
 
 from gensim.matutils import cossim
 from nltk.data import load
@@ -125,7 +125,7 @@ class Snowball:
         Checks if an extracted tuple matches seeds tuples
         """
         matched_tuples: List[SnowballTuple] = []
-        count_matches: Dict[Tuple[str,str], int] = defaultdict(int)
+        count_matches: Dict[Tuple[str, str], int] = defaultdict(int)
         for tpl in self.processed_tuples:
             for seed in self.config.positive_seeds:
                 if tpl.ent1 == seed.ent1 and tpl.ent2 == seed.ent2:
@@ -174,7 +174,7 @@ class Snowball:
             with open("processed_tuples.pkl", "wb") as f_out:
                 pickle.dump(self.processed_tuples, f_out)
 
-    def init_bootstrap(self, tuples):   # noqa: C901
+    def init_bootstrap(self, tuples):  # noqa: C901
         # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
         """
         Starts a bootstrap iteration
