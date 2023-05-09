@@ -4,7 +4,7 @@ __email__ = "dsbatista@gmail.com"
 import sys
 from copy import deepcopy
 from math import log
-from typing import Any, List, Optional, Set
+from typing import Any, List, Optional, Set, Tuple
 
 from snowball.config import Config
 from snowball.snowball_tuple import SnowballTuple
@@ -23,9 +23,9 @@ class Pattern:
         self.confidence: float = 0.0
         self.tuples: List[SnowballTuple] = []
         self.tuple_patterns: Set[Any] = set()
-        self.centroid_bef = []
-        self.centroid_bet = []
-        self.centroid_aft = []
+        self.centroid_bef: Optional[List[Tuple[int, float]]] = []
+        self.centroid_bet: Optional[List[Tuple[int, float]]] = []
+        self.centroid_aft: Optional[List[Tuple[int, float]]] = []
         if tpl is not None:
             self.tuples.append(tpl)
             self.centroid_bef = tpl.bef_vector
@@ -117,6 +117,7 @@ class Pattern:
         """
         Calculate the centroid of a pattern
         """
+        # ToDo: refactor this method
         centroid = deepcopy(self.tuples[0].get_vector(context))
         if centroid is not None:
             # add all other words from other tuples
@@ -136,7 +137,7 @@ class Pattern:
                                     # update (w,tf-idf) in the centroid
                                     w_new = list(centroid[i])
                                     w_new[1] = current_tf_idf
-                                    centroid[i] = tuple(w_new)
+                                    centroid[i] = tuple(w_new)  # type: ignore
                                     break
                         # if it is not in the centroid, added it with the associated tf-idf score
                         else:
@@ -153,6 +154,6 @@ class Pattern:
                 except AssertionError:
                     print("Error calculating extraction pattern centroid")
                     sys.exit(0)
-                centroid[i] = tuple(tmp)
+                centroid[i] = tuple(tmp)    # type: ignore
 
         return centroid

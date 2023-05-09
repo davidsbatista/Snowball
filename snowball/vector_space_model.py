@@ -35,4 +35,4 @@ class VectorSpaceModel:
         self.dictionary = corpora.Dictionary(documents)
         self.corpus = [self.dictionary.doc2bow(text) for text in documents]
         self.tf_idf_model = TfidfModel(self.corpus)
-        print(len(self.dictionary), " unique tokens")
+        print(f"{len(self.dictionary)} unique tokens")
