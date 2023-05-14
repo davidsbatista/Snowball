@@ -14,7 +14,7 @@ from snowball.vector_space_model import VectorSpaceModel
 
 
 class Config:
-    # pylint: disable=too-many-instance-attributes, too-few-public-methods
+    # pylint: disable=too-many-instance-attributes
     """
     Configuration class
     """
@@ -29,7 +29,7 @@ class Config:
         confidence: float,
         n_iterations: int,
     ) -> None:  # noqa: C901
-        # pylint: disable=too-many-arguments, too-many-statements, too-many-branches
+        # pylint: disable=too-many-arguments, too-many-statements
         if config_file is None:
             self.context_window_size: int = 2
             self.min_tokens_away: int = 1
@@ -43,7 +43,6 @@ class Config:
             self.w_unk: float = 0.0
             self.w_updt: float = 0.5
             self.use_reverb: bool = True
-            self.use_r_log_f: bool = True
         else:
             self.read_config(config_file)
         self.positive_seeds: Set[Seed] = set()
@@ -130,11 +129,8 @@ class Config:
             if line.startswith("wNeg"):
                 self.w_neg = float(line.split("=")[1])
 
-            if line.startswith("use_RlogF"):
-                self.use_r_log_f = bool(line.split("=")[1])
-
             if line.startswith("use_reverb"):
-                self.use_reverb = line.split("=")[1].strip()
+                self.use_reverb = True
 
             if line.startswith("min_pattern_support"):
                 self.min_pattern_support = int(line.split("=")[1])

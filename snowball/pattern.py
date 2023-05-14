@@ -67,7 +67,7 @@ class Pattern:
         Add another tuple to be used to generate the pattern
         """
         self.tuples.append(tpl)
-        self.updated_centroid()
+        self.update_centroid()
 
     def update_selectivity(self, tpl: SnowballTuple, config: Config) -> None:
         """
@@ -97,7 +97,7 @@ class Pattern:
         for tpl in self.tuples:
             self.tuple_patterns.add(tpl.bet_words)
 
-    def updated_centroid(self) -> None:
+    def update_centroid(self) -> None:
         """
         Calculate the centroid of a pattern, based on the tuples associated with it.
 
