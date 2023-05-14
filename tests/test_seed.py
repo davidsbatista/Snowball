@@ -13,6 +13,7 @@ def test_seed_equality():
     s3 = Seed("b", "a")
     assert s1 == s2
     assert not s1 == s3
+    assert s1 != 1
 
 
 def test_seed_hashing():
