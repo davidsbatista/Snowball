@@ -6,7 +6,7 @@ import os
 import pickle
 import sys
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from gensim.matutils import cossim
 from nltk.data import load
@@ -36,7 +36,8 @@ class Snowball:
         # pylint: disable=too-many-arguments
         self.patterns: List[Pattern] = []
         self.processed_tuples: List[SnowballTuple] = []
-        self.candidate_tuples: Dict[Any, List[Any]] = defaultdict(list)
+        # self.candidate_tuples: Dict[Any, List[Any]] = defaultdict(list)
+        self.candidate_tuples: Dict[SnowballTuple, List[Tuple[Pattern, float]]] = defaultdict(list)
         self.config = Config(
             config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence, n_iterations
         )
@@ -188,7 +189,7 @@ class Snowball:
             with open("processed_tuples.pkl", "wb") as f_out:
                 pickle.dump(self.processed_tuples, f_out)
 
-    def init_bootstrap(self, tuples: str) -> None:  # noqa: C901
+    def init_bootstrap(self, tuples: Optional[str]) -> None:  # noqa: C901
         # pylint: disable=too-many-locals, too-many-branches, too-many-statements
         """
         Starts a bootstrap iteration
@@ -237,8 +238,10 @@ class Snowball:
             # each with an associated degree of match.
             print("\nCollecting instances based on extraction patterns")
             pattern_best = None
+
             for processed_tpl in tqdm(self.processed_tuples):
                 sim_best: float = 0.0
+
                 for extraction_pattern in self.patterns:
                     score = self.similarity(processed_tpl, extraction_pattern)
                     if score > self.config.threshold_similarity:

@@ -20,6 +20,7 @@ class Pattern:
         self.positive: int = 0
         self.negative: int = 0
         self.unknown: int = 0
+        self.confidence_old: float = 0.0
         self.confidence: float = 0.0
         self.tuples: List[SnowballTuple] = []
         self.tuple_patterns: Set[Any] = set()
