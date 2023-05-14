@@ -6,7 +6,7 @@ import os
 import pickle
 import sys
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from gensim.matutils import cossim
 from nltk.data import load
@@ -35,17 +35,18 @@ class Snowball:
     ):
         # pylint: disable=too-many-arguments
         self.patterns: List[Pattern] = []
-        self.processed_tuples = []
-        self.candidate_tuples = defaultdict(list)
+        self.processed_tuples: List[SnowballTuple] = []
+        self.candidate_tuples: Dict[Any, List[Any]] = defaultdict(list)
         self.config = Config(
             config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence, n_iterations
         )
 
     def write_relationships_to_disk(self) -> None:
         """Write extracted relationships to disk"""
+        # ToDo: write this in JSON format
         print("\nWriting extracted relationships to disk")
         with open("relationships.txt", "wt", encoding="utf8") as f_output:
-            tmp = sorted(self.candidate_tuples, key=lambda tpl: tpl.confidence, reverse=True)
+            tmp = sorted(self.candidate_tuples, key=lambda out_tpl: out_tpl.confidence, reverse=True)
             for tpl in tmp:
                 f_output.write("instance: " + tpl.ent1 + "\t" + tpl.ent2 + "\tscore:" + str(tpl.confidence) + "\n")
                 f_output.write("sentence: " + tpl.sentence + "\n")
@@ -88,7 +89,7 @@ class Snowball:
 
         return self.config.alpha * bef + self.config.beta * bet + self.config.gamma * aft
 
-    def cluster_tuples(self, matched_tuples):
+    def cluster_tuples(self, matched_tuples: List[SnowballTuple]) -> None:
         """
         single-pass clustering
         """
@@ -101,8 +102,8 @@ class Snowball:
         # compute the similarity between an instance with each pattern go through all tuples
         for i in range(start, len(matched_tuples), 1):
             tpl = matched_tuples[i]
-            max_similarity = 0
-            max_similarity_cluster_index = 0
+            max_similarity: float = 0.0
+            max_similarity_cluster_index: int = 0
 
             # go through all patterns(clusters of tuples) and find the one with the highest similarity score
             for pattern_idx in range(0, len(self.patterns), 1):
@@ -174,7 +175,7 @@ class Snowball:
             with open("processed_tuples.pkl", "wb") as f_out:
                 pickle.dump(self.processed_tuples, f_out)
 
-    def init_bootstrap(self, tuples):  # noqa: C901
+    def init_bootstrap(self, tuples: str) -> None:  # noqa: C901
         # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
         """
         Starts a bootstrap iteration
