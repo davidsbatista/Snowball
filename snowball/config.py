@@ -29,6 +29,9 @@ class Config:
         confidence: float,
         n_iterations: int,
     ) -> None:  # noqa: C901
+
+        print(config_file, positive_seeds, negative_seeds, sentences_file, similarity, confidence, n_iterations)
+
         # pylint: disable=too-many-arguments, too-many-statements
         if config_file is None:
             self.context_window_size: int = 2
@@ -55,8 +58,8 @@ class Config:
         self.reverb: "Reverb" = Reverb()
         self.number_iterations = n_iterations
         self.read_seeds(positive_seeds, self.positive_seeds)
-        self.read_seeds(negative_seeds, self.negative_seeds)
-        fileinput.close()
+        if negative_seeds:
+            self.read_seeds(negative_seeds, self.negative_seed_tuples)
 
         print("\nConfiguration parameters")
         print("========================")

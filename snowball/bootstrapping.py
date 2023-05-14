@@ -34,6 +34,9 @@ class Snowball:
         n_iterations: int,
     ):
         # pylint: disable=too-many-arguments
+
+        print(config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence, n_iterations)
+
         self.current_iteration: int = 0
         self.patterns: List[Pattern] = []
         self.processed_tuples: List[SnowballTuple] = []

@@ -57,6 +57,9 @@ def main() -> None:  # pylint: disable=missing-function-docstring
         parser.print_help(sys.stderr)
         sys.exit(1)
     args = parser.parse_args()
+
+    print(args)
+
     snowball = Snowball(
         args.config,
         args.positive_seeds,
