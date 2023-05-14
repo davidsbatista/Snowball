@@ -10,7 +10,6 @@ from nltk.corpus import stopwords
 
 from snowball.reverb_breds import Reverb
 from snowball.seed import Seed
-from snowball.snowball_tuple import SnowballTuple
 from snowball.vector_space_model import VectorSpaceModel
 
 

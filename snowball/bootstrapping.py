@@ -122,6 +122,18 @@ class Snowball:
             else:
                 self.patterns[max_similarity_cluster_index].add_tuple(tpl)
 
+    def _normalize_confidence(self) -> None:
+        """
+        Normalize patterns confidence, find the maximum value of confidence and divide all by the maximum value.
+        """
+        max_confidence: float = 0.0
+        for pattern in self.patterns:
+            if pattern.confidence > max_confidence:
+                max_confidence = pattern.confidence
+        if max_confidence > 0:
+            for pattern in self.patterns:
+                pattern.confidence = float(pattern.confidence) / float(max_confidence)
+
     def match_seeds_tuples(self) -> Tuple[Dict[Tuple[str, str], int], List[SnowballTuple]]:
         """
         Looks for sentences matching the seed instances, checks if an extracted tuple matches seeds tuples.
@@ -177,7 +189,7 @@ class Snowball:
                 pickle.dump(self.processed_tuples, f_out)
 
     def init_bootstrap(self, tuples: str) -> None:  # noqa: C901
-        # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
+        # pylint: disable=too-many-locals, too-many-branches, too-many-statements
         """
         Starts a bootstrap iteration
         """
@@ -253,17 +265,7 @@ class Snowball:
                 )
                 extraction_pattern.update_confidence()  # pylint: disable=undefined-loop-variable
 
-            # normalize patterns confidence find the maximum value of confidence and divide all by the maximum
-            # ToDo: extract this to a method
-            max_confidence: float = 0.0
-            for pattern in self.patterns:
-                if pattern.confidence > max_confidence:
-                    max_confidence = pattern.confidence
-
-            if max_confidence > 0:
-                for pattern in self.patterns:
-                    pattern.confidence = float(pattern.confidence) / float(max_confidence)
-
+            self._normalize_confidence()
             self.debug_patterns()
 
             # update tuple confidence based on patterns confidence
@@ -284,8 +286,7 @@ class Snowball:
                         + candidate_tpl.confidence_old * (1 - self.config.w_updt)
                     )
 
-            # update seed set of tuples to use in next iteration
-            # seeds = { T | Conf(T) > min_tuple_confidence }
+            # update seed set of tuples to use in next iteration: seeds = { T | Conf(T) > min_tuple_confidence }
             if i + 1 < self.config.number_iterations:
                 print("Adding tuples to seed with confidence =>" + str(self.config.instance_confidence))
                 for seed_tpl in self.candidate_tuples.keys():
