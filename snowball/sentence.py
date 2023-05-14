@@ -86,10 +86,14 @@ class Relationship:  # pylint: disable=too-many-arguments, too-many-instance-att
             and self.before == other.before
             and self.between == other.between
             and self.after == other.after
+            and self.e1_type == other.e1_type
+            and self.e2_type == other.e2_type
         )
 
+    """
     def __hash__(self) -> int:
         return hash(self.ent1) ^ hash(self.ent2) ^ hash(self.before) ^ hash(self.between) ^ hash(self.after)
+    """
 
 
 class Sentence:  # pylint: disable=too-few-public-methods, too-many-locals, too-many-arguments
