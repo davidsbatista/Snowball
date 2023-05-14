@@ -1,16 +1,18 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
-import codecs
 import operator
+import os
 import pickle
 import sys
 from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
 from gensim.matutils import cossim
-from nltk import word_tokenize
+from nltk.data import load
 from tqdm import tqdm
 
+from snowball.commons import blocks
 from snowball.config import Config
 from snowball.pattern import Pattern
 from snowball.seed import Seed
@@ -21,177 +23,31 @@ PRINT_PATTERNS = False
 
 
 class Snowball:
-    def __init__(self, config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence):
+    def __init__(
+        self,
+        config_file: str,
+        seeds_file: str,
+        negative_seeds: str,
+        sentences_file: str,
+        similarity: float,
+        confidence: float,
+        n_iterations: int,
+    ):
         # pylint: disable=too-many-arguments
-        self.patterns = []
-        self.processed_tuples = []
-        self.candidate_tuples = defaultdict(list)
-        self.config = Config(config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence)
+        self.current_iteration: int = 0
+        self.patterns: List[Pattern] = []
+        self.processed_tuples: List[SnowballTuple] = []
+        self.candidate_tuples: Dict[SnowballTuple, List[Tuple[Pattern, float]]] = defaultdict(list)
+        self.config = Config(
+            config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence, n_iterations
+        )
 
-    def generate_tuples(self, sentences_file):
-        """
-        Generate tuples instances from a text file with sentences where named entities are already tagged
-        """
-        try:
-            with open("processed_tuples.pkl", "rb") as f_in:
-                print("\nLoading processed tuples from disk...")
-                self.processed_tuples = pickle.load(f_in)
-                print(len(self.processed_tuples), "tuples loaded")
-        except IOError:
-            print("\nGenerating relationship instances from sentences")
-            with codecs.open(sentences_file, encoding="utf-8") as f_sentences:
-                for line in f_sentences:
-                    sentence = Sentence(
-                        line.strip(),
-                        self.config.e1_type,
-                        self.config.e2_type,
-                        self.config.max_tokens_away,
-                        self.config.min_tokens_away,
-                        self.config.context_window_size,
-                    )
-
-                    for rel in sentence.relationships:
-                        if rel.arg1type == self.config.e1_type and rel.arg2type == self.config.e2_type:
-                            bef_tokens = word_tokenize(rel.before)
-                            bet_tokens = word_tokenize(rel.between)
-                            aft_tokens = word_tokenize(rel.after)
-                            if not (bef_tokens == 0 and bet_tokens == 0 and aft_tokens == 0):
-                                tpl = SnowballTuple(
-                                    rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config
-                                )
-                                self.processed_tuples.append(tpl)
-
-            print(f"\n{len(self.processed_tuples)} relationships generated")
-            print("Dumping relationships to file")
-            with open("processed_tuples.pkl", "wb") as f_out:
-                pickle.dump(self.processed_tuples, f_out)
-
-    def init_bootstrap(self, tuples):  # noqa: C901
-        # pylint: disable=too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
-        """
-        Starts a bootstrap iteration
-        """
-        if tuples is not None:
-            with open(tuples, "rb") as f_in:
-                print("Loading pre-processed sentences", tuples)
-                self.processed_tuples = pickle.load(f_in)
-                print(len(self.processed_tuples), "tuples loaded")
-
-        i = 0
-        while i <= self.config.number_iterations:
-            print("\n=============================================")
-            print("\nStarting iteration", i)
-            print("\nLooking for seed matches of:")
-            for seed in self.config.seed_tuples:
-                print(f"{seed.ent1}\t{seed.ent2}")
-
-            # Looks for sentences matching the seed instances
-            count_matches, matched_tuples = self.match_seeds_tuples()
-
-            if len(matched_tuples) == 0:
-                print("\nNo seed matches found")
-                sys.exit(0)
-
-            else:
-                print("\nNumber of seed matches found")
-                sorted_counts = sorted(count_matches.items(), key=operator.itemgetter(1), reverse=True)
-                for tpl in sorted_counts:
-                    print(f"{tpl[0][0]}\t{tpl[0][1]} {tpl[1]}")
-
-                # Cluster the matched instances: generate patterns/update patterns
-                print("\nClustering matched instances to generate patterns")
-                self.cluster_tuples(matched_tuples)
-
-                # Eliminate patterns supported by less than 'min_pattern_support' tuples
-                new_patterns = [p for p in self.patterns if len(p.tuples) >= self.config.min_pattern_support]
-                self.patterns = new_patterns
-                print("\n", len(self.patterns), "patterns generated")
-                if i == 0 and len(self.patterns) == 0:
-                    print("No patterns generated")
-                    sys.exit(0)
-
-                # Look for sentences with occurrence of seeds semantic types (e.g., ORG - LOC)
-                # This was already collect and its stored in: self.processed_tuples
-                #
-                # Measure the similarity of each occurrence with each extraction pattern
-                # and store each pattern that has a similarity higher than a given threshold
-                #
-                # Each candidate tuple will then have a number of patterns that helped generate it,
-                # each with an associated de gree of match. Snowball uses this infor
-                print("\nCollecting instances based on extraction patterns")
-                pattern_best = None
-                for tpl in tqdm(self.processed_tuples):
-                    sim_best = 0
-                    for extraction_pattern in self.patterns:
-                        score = self.similarity(tpl, extraction_pattern)
-                        if score > self.config.threshold_similarity:
-                            extraction_pattern.update_selectivity(tpl, self.config)
-                        if score > sim_best:
-                            sim_best = score
-                            pattern_best = extraction_pattern
-
-                    if sim_best >= self.config.threshold_similarity:
-                        # if this instance was already extracted, check if it was by this extraction pattern
-                        patterns = self.candidate_tuples[tpl]
-                        if patterns is not None:
-                            if pattern_best not in [x[0] for x in patterns]:
-                                self.candidate_tuples[tpl].append((pattern_best, sim_best))
-
-                        # if this instance was not extracted before, associate this extraction pattern with the instance
-                        # and the similarity score
-                        else:
-                            self.candidate_tuples[tpl].append((pattern_best, sim_best))
-
-                    # update extraction pattern confidence
-                    extraction_pattern.confidence_old = (  # pylint: disable=undefined-loop-variable
-                        extraction_pattern.confidence  # pylint: disable=undefined-loop-variable
-                    )
-                    extraction_pattern.update_confidence()  # pylint: disable=undefined-loop-variable
-
-                # normalize patterns confidence find the maximum value of confidence and divide all by the maximum
-                max_confidence = 0
-                for pattern in self.patterns:
-                    if pattern.confidence > max_confidence:
-                        max_confidence = pattern.confidence
-
-                if max_confidence > 0:
-                    for pattern in self.patterns:
-                        pattern.confidence = float(pattern.confidence) / float(max_confidence)
-
-                self.debug_patterns()
-
-                # update tuple confidence based on patterns confidence
-                print("\nCalculating tuples confidence")
-                for tpl in self.candidate_tuples.keys():
-                    confidence = 1
-                    tpl.confidence_old = tpl.confidence
-                    for pattern in self.candidate_tuples.get(tpl):
-                        confidence *= 1 - (pattern[0].confidence * pattern[1])
-                    tpl.confidence = 1 - confidence
-
-                    # use past confidence values to calculate new confidence
-                    # if parameter Wupdt < 0.5 the system trusts new examples less on each iteration
-                    # which will lead to more conservative patterns and have a damping effect.
-                    if i > 0:
-                        tpl.confidence = tpl.confidence * self.config.w_updt + tpl.confidence_old * (
-                            1 - self.config.w_updt
-                        )
-
-                # update seed set of tuples to use in next iteration
-                # seeds = { T | Conf(T) > min_tuple_confidence }
-                if i + 1 < self.config.number_iterations:
-                    print("Adding tuples to seed with confidence =>" + str(self.config.instance_confidence))
-                    for tpl in self.candidate_tuples.keys():
-                        if tpl.confidence >= self.config.instance_confidence:
-                            seed = Seed(tpl.ent1, tpl.ent2)
-                            self.config.seed_tuples.add(seed)
-
-                # increment the number of iterations
-                i += 1
-
+    def write_relationships_to_disk(self) -> None:
+        """Write extracted relationships to disk"""
+        # ToDo: write this in JSON format
         print("\nWriting extracted relationships to disk")
         with open("relationships.txt", "wt", encoding="utf8") as f_output:
-            tmp = sorted(self.candidate_tuples, key=lambda tpl: tpl.confidence, reverse=True)
+            tmp = sorted(self.candidate_tuples, key=lambda out_tpl: out_tpl.confidence, reverse=True)
             for tpl in tmp:
                 f_output.write("instance: " + tpl.ent1 + "\t" + tpl.ent2 + "\tscore:" + str(tpl.confidence) + "\n")
                 f_output.write("sentence: " + tpl.sentence + "\n")
@@ -201,7 +57,7 @@ class Snowball:
                     f_output.write("passive voice: True\n")
                 f_output.write("\n")
 
-    def debug_patterns(self):
+    def debug_patterns(self) -> None:
         """
         Print patterns to stdout
         """
@@ -217,7 +73,7 @@ class Snowball:
                 print("Pattern Confidence", pattern.confidence)
                 print("\n")
 
-    def similarity(self, tpl, extraction_pattern):
+    def similarity(self, tpl: SnowballTuple, extraction_pattern: Pattern) -> float:
         """
         Calculate the similarity between a tuple and an extraction pattern
         """
@@ -234,9 +90,10 @@ class Snowball:
 
         return self.config.alpha * bef + self.config.beta * bet + self.config.gamma * aft
 
-    def cluster_tuples(self, matched_tuples):
+    def cluster_tuples(self, matched_tuples: List[SnowballTuple]) -> None:
         """
-        single-pass clustering
+        Cluster the matched instances: generate patterns/update patterns.
+        Applies a single-pass clustering algorithm to cluster the matched instances.
         """
         start = 0
         # initialize: if no patterns exist, first tuple goes to first cluster
@@ -247,8 +104,8 @@ class Snowball:
         # compute the similarity between an instance with each pattern go through all tuples
         for i in range(start, len(matched_tuples), 1):
             tpl = matched_tuples[i]
-            max_similarity = 0
-            max_similarity_cluster_index = 0
+            max_similarity: float = 0.0
+            max_similarity_cluster_index: int = 0
 
             # go through all patterns(clusters of tuples) and find the one with the highest similarity score
             for pattern_idx in range(0, len(self.patterns), 1):
@@ -266,46 +123,187 @@ class Snowball:
             else:
                 self.patterns[max_similarity_cluster_index].add_tuple(tpl)
 
-    def match_seeds_tuples(self):
+    def _normalize_confidence(self) -> None:
         """
-        Checks if an extracted tuple matches seeds tuples
+        Normalize patterns confidence, find the maximum value of confidence and divide all by the maximum value.
         """
-        matched_tuples = []
-        count_matches = defaultdict(int)
+        max_confidence: float = 0.0
+        for pattern in self.patterns:
+            if pattern.confidence > max_confidence:
+                max_confidence = pattern.confidence
+        if max_confidence > 0:
+            for pattern in self.patterns:
+                pattern.confidence = float(pattern.confidence) / float(max_confidence)
+
+    def match_seeds_tuples(self) -> Tuple[Dict[Tuple[str, str], int], List[SnowballTuple]]:
+        """
+        Looks for sentences matching the seed instances, checks if an extracted tuple matches seeds tuples.
+        """
+        matched_tuples: List[SnowballTuple] = []
+        count_matches: Dict[Tuple[str, str], int] = defaultdict(int)
         for tpl in self.processed_tuples:
-            for seed in self.config.seed_tuples:
+            for seed in self.config.positive_seeds:
                 if tpl.ent1 == seed.ent1 and tpl.ent2 == seed.ent2:
                     matched_tuples.append(tpl)
                     count_matches[(tpl.ent1, tpl.ent2)] += 1
 
         return count_matches, matched_tuples
 
-
-def main():
-    # pylint: disable=missing-function-docstring
-    if len(sys.argv) != 7:
-        print(
-            "\nSnowball.py paramters.cfg sentences_file seeds_file_positive seeds_file_negative similarity_threshold"
-            " confidance_threshold\n"
-        )
-        sys.exit(0)
-    else:
-        configuration = sys.argv[1]
-        sentences_file = sys.argv[2]
-        seeds_file = sys.argv[3]
-        negative_seeds = sys.argv[4]
-        similarity = sys.argv[5]
-        confidence = sys.argv[6]
-
-        snowball = Snowball(
-            configuration, seeds_file, negative_seeds, sentences_file, float(similarity), float(confidence)
-        )
-        if sentences_file.endswith(".pkl"):
-            snowball.init_bootstrap(tuples=sentences_file)
+    def generate_tuples(self, sentences_file: str) -> None:
+        """
+        Generate tuples instances from a text file with sentences where named entities are already tagged
+        """
+        if os.path.exists("processed_tuples.pkl"):
+            with open("processed_tuples.pkl", "rb") as f_in:
+                print("\nLoading processed tuples from disk...")
+                self.processed_tuples = pickle.load(f_in)
+                print(len(self.processed_tuples), "tuples loaded")
         else:
-            snowball.generate_tuples(sentences_file)
-            snowball.init_bootstrap(tuples=None)
+            print("\nGenerating relationship instances from sentences")
+            tagger = load("taggers/maxent_treebank_pos_tagger/english.pickle")
 
+            with open(sentences_file, "r", encoding="utf8") as f_in:
+                total = sum(bl.count("\n") for bl in blocks(f_in))
 
-if __name__ == "__main__":
-    main()
+            with open(sentences_file, encoding="utf-8") as f_sentences:
+                for line in tqdm(f_sentences, total=total):
+                    sentence = Sentence(
+                        line.strip(),
+                        self.config.e1_type,
+                        self.config.e2_type,
+                        self.config.max_tokens_away,
+                        self.config.min_tokens_away,
+                        self.config.context_window_size,
+                        tagger,
+                    )
+
+                    for rel in sentence.relationships:
+                        if rel.e1_type == self.config.e1_type and rel.e2_type == self.config.e2_type:
+                            tpl = SnowballTuple(
+                                rel.ent1, rel.ent2, rel.sentence, rel.before, rel.between, rel.after, self.config
+                            )
+                            self.processed_tuples.append(tpl)
+
+            print(f"\n{len(self.processed_tuples)} relationships generated")
+            print("Dumping relationships to file")
+            with open("processed_tuples.pkl", "wb") as f_out:
+                pickle.dump(self.processed_tuples, f_out)
+
+    def _update_seeds(self) -> None:
+        """
+        Update seed set of tuples to use in next iteration:
+            seeds = { T | Conf(T) > min_tuple_confidence }
+        """
+        if self.current_iteration + 1 < self.config.number_iterations:
+            print("Adding tuples to seed with confidence =>" + str(self.config.instance_confidence))
+            for seed_tpl in self.candidate_tuples.keys():
+                if seed_tpl.confidence >= self.config.instance_confidence:
+                    seed = Seed(seed_tpl.ent1, seed_tpl.ent2)
+                    self.config.positive_seeds.add(seed)
+
+    def init_bootstrap(self, tuples: Optional[str]) -> None:  # noqa: C901
+        # pylint: disable=too-many-locals, too-many-branches, too-many-statements
+        """
+        Starts a bootstrap iteration
+        """
+        if tuples is not None:
+            with open(tuples, "rb") as f_in:
+                print("Loading pre-processed sentences", tuples)
+                self.processed_tuples = pickle.load(f_in)
+                print(len(self.processed_tuples), "tuples loaded")
+
+        while self.current_iteration <= self.config.number_iterations:
+            print("\n=============================================")
+            print("\nStarting iteration", self.current_iteration)
+            print("\nLooking for seed matches of:")
+            for seed in self.config.positive_seeds:
+                print(f"{seed.ent1}\t{seed.ent2}")
+
+            count_matches, matched_tuples = self.match_seeds_tuples()
+
+            if len(matched_tuples) == 0:
+                print("\nNo seed matches found")
+                sys.exit(0)
+
+            print("\nNumber of seed matches found")
+            for tpl in sorted(count_matches.items(), key=operator.itemgetter(1), reverse=True):
+                print(f"{tpl[0][0]}\t{tpl[0][1]} {tpl[1]}")
+
+            print("\nClustering matched instances to generate patterns")
+            self.cluster_tuples(matched_tuples)
+
+            # eliminate patterns supported by less than 'min_pattern_support' tuples
+            self.patterns = [p for p in self.patterns if len(p.tuples) >= self.config.min_pattern_support]
+            print("\n", len(self.patterns), "patterns generated")
+            if self.current_iteration == 0 and len(self.patterns) == 0:
+                print("No patterns generated")
+                sys.exit(0)
+
+            # Look for sentences with occurrence of seeds semantic types (e.g., ORG - LOC)
+            # This was already collect, and it's stored in: self.processed_tuples
+            #
+            # Measure the similarity of each occurrence with each extraction pattern
+            # and store each pattern that has a similarity higher than a given threshold
+            #
+            # Each candidate tuple will then have a number of patterns that helped generate it,
+            # each with an associated degree of match.
+            print("\nCollecting instances based on extraction patterns")
+            pattern_best = None
+
+            for processed_tpl in tqdm(self.processed_tuples):
+                sim_best: float = 0.0
+
+                for extraction_pattern in self.patterns:
+                    score = self.similarity(processed_tpl, extraction_pattern)
+                    if score > self.config.threshold_similarity:
+                        extraction_pattern.update_selectivity(processed_tpl, self.config)
+                    if score > sim_best:
+                        sim_best = score
+                        pattern_best = extraction_pattern
+
+                if sim_best >= self.config.threshold_similarity:
+                    # if this instance was already extracted, check if it was by this extraction pattern
+                    patterns = self.candidate_tuples[processed_tpl]
+                    if patterns is not None and pattern_best not in [x[0] for x in patterns]:
+                        self.candidate_tuples[processed_tpl].append((pattern_best, sim_best))  # type: ignore
+
+                    # if this instance was not extracted before, associate this extraction pattern with the instance
+                    # and the similarity score
+                    else:
+                        self.candidate_tuples[processed_tpl].append((pattern_best, sim_best))
+
+                # update extraction pattern confidence
+                extraction_pattern.confidence_old = (  # pylint: disable=undefined-loop-variable
+                    extraction_pattern.confidence  # pylint: disable=undefined-loop-variable
+                )
+                extraction_pattern.update_confidence()  # pylint: disable=undefined-loop-variable
+
+            self._normalize_confidence()
+            self.debug_patterns()
+
+            # update tuple confidence based on patterns confidence
+            print("\nCalculating tuples confidence")
+            for candidate_tpl in list(self.candidate_tuples.keys()):
+                confidence: float = 1.0
+                candidate_tpl.confidence_old = candidate_tpl.confidence
+                for candidate_pattern_score in self.candidate_tuples[candidate_tpl]:
+                    pattern = candidate_pattern_score[0]
+                    score = candidate_pattern_score[1]
+                    confidence *= 1 - (pattern.confidence * score)
+                candidate_tpl.confidence = 1 - confidence
+
+                # use past confidence values to calculate new confidence
+                # if parameter Wupdt < 0.5 the system trusts new examples less on each iteration
+                # which will lead to more conservative patterns and have a damping effect.
+                if self.current_iteration > 0:
+                    candidate_tpl.confidence = (
+                        candidate_tpl.confidence * self.config.w_updt
+                        + candidate_tpl.confidence_old * (1 - self.config.w_updt)
+                    )
+
+            self._update_seeds()
+
+            # increment the number of iterations
+            self.current_iteration += 1
+
+        self.write_relationships_to_disk()

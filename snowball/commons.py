@@ -1,4 +1,7 @@
+import re
 from typing import Generator, TextIO
+
+tags_regex = re.compile("<[A-Z]+>[^<]+</[A-Z]+>", re.U)
 
 
 def blocks(files: TextIO, size: int = 65536) -> Generator[str, None, None]:
@@ -8,3 +11,8 @@ def blocks(files: TextIO, size: int = 65536) -> Generator[str, None, None]:
         if not buffer:
             break
         yield buffer
+
+
+def clean_tags(sentence: str) -> str:
+    """Remove tags from a sentence."""
+    return re.sub(tags_regex, "", sentence)

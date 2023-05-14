@@ -1,23 +1,23 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
-import re
 
 from gensim import corpora
 from gensim.models import TfidfModel
 from nltk import word_tokenize
 from tqdm import tqdm
 
-from snowball.commons import blocks
+from snowball.commons import blocks, clean_tags
 
 
-class VectorSpaceModel:
+class VectorSpaceModel:  # pragma: no cover
     # pylint: disable=too-few-public-methods
     """
     Vector Space Model class
+    # remove stop words and tokenize
     """
 
-    def __init__(self, sentences_file, stopwords):
+    def __init__(self, sentences_file: str, stopwords: set) -> None:
         self.dictionary = None
         self.corpus = None
 
@@ -26,14 +26,12 @@ class VectorSpaceModel:
 
         with open(sentences_file, "rt", encoding="utf8") as f_sentences:
             documents = []
-            print("Gathering sentences and removing stopwords")
-            for line in tqdm(f_sentences, total=total):
-                line = re.sub("<[A-Z]+>[^<]+</[A-Z]+>", "", line)
-                # remove stop words and tokenize
-                document = [word for word in word_tokenize(line.lower()) if word not in stopwords]
+            for sentence in tqdm(f_sentences, total=total):
+                sentence_clean = clean_tags(sentence)
+                document = [word for word in word_tokenize(sentence_clean.lower()) if word not in stopwords]
                 documents.append(document)
 
         self.dictionary = corpora.Dictionary(documents)
         self.corpus = [self.dictionary.doc2bow(text) for text in documents]
         self.tf_idf_model = TfidfModel(self.corpus)
-        print(len(self.dictionary), " unique tokens")
+        print(f"{len(self.dictionary)} unique tokens")
