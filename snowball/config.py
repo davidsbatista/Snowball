@@ -56,7 +56,7 @@ class Config:
         self.number_iterations = n_iterations
         self.read_seeds(positive_seeds, self.positive_seeds)
         if negative_seeds:
-            self.read_seeds(negative_seeds, self.negative_seed_tuples)
+            self.read_seeds(negative_seeds, self.negative_seeds)
 
         print("\nConfiguration parameters")
         print("========================")
