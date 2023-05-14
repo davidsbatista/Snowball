@@ -1,6 +1,6 @@
 import pytest
 
-from snowball.sentence import Entity, tokenize_entity, Relationship
+from snowball.sentence import Entity, Relationship, tokenize_entity
 
 
 @pytest.fixture
