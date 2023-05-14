@@ -91,7 +91,8 @@ class Snowball:
 
     def cluster_tuples(self, matched_tuples: List[SnowballTuple]) -> None:
         """
-        single-pass clustering
+        Cluster the matched instances: generate patterns/update patterns.
+        Applies a single-pass clustering algorithm to cluster the matched instances.
         """
         start = 0
         # initialize: if no patterns exist, first tuple goes to first cluster
@@ -123,7 +124,7 @@ class Snowball:
 
     def match_seeds_tuples(self) -> Tuple[Dict[Tuple[str, str], int], List[SnowballTuple]]:
         """
-        Checks if an extracted tuple matches seeds tuples
+        Looks for sentences matching the seed instances, checks if an extracted tuple matches seeds tuples.
         """
         matched_tuples: List[SnowballTuple] = []
         count_matches: Dict[Tuple[str, str], int] = defaultdict(int)
@@ -194,108 +195,105 @@ class Snowball:
             for seed in self.config.positive_seeds:
                 print(f"{seed.ent1}\t{seed.ent2}")
 
-            # Looks for sentences matching the seed instances
             count_matches, matched_tuples = self.match_seeds_tuples()
 
             if len(matched_tuples) == 0:
                 print("\nNo seed matches found")
                 sys.exit(0)
 
-            else:
-                print("\nNumber of seed matches found")
-                sorted_counts = sorted(count_matches.items(), key=operator.itemgetter(1), reverse=True)
-                for tpl in sorted_counts:
-                    print(f"{tpl[0][0]}\t{tpl[0][1]} {tpl[1]}")
+            print("\nNumber of seed matches found")
+            for tpl in sorted(count_matches.items(), key=operator.itemgetter(1), reverse=True):
+                print(f"{tpl[0][0]}\t{tpl[0][1]} {tpl[1]}")
 
-                # Cluster the matched instances: generate patterns/update patterns
-                print("\nClustering matched instances to generate patterns")
-                self.cluster_tuples(matched_tuples)
+            print("\nClustering matched instances to generate patterns")
+            self.cluster_tuples(matched_tuples)
 
-                # Eliminate patterns supported by less than 'min_pattern_support' tuples
-                new_patterns = [p for p in self.patterns if len(p.tuples) >= self.config.min_pattern_support]
-                self.patterns = new_patterns
-                print("\n", len(self.patterns), "patterns generated")
-                if i == 0 and len(self.patterns) == 0:
-                    print("No patterns generated")
-                    sys.exit(0)
+            # eliminate patterns supported by less than 'min_pattern_support' tuples
+            self.patterns = [p for p in self.patterns if len(p.tuples) >= self.config.min_pattern_support]
+            print("\n", len(self.patterns), "patterns generated")
+            if i == 0 and len(self.patterns) == 0:
+                print("No patterns generated")
+                sys.exit(0)
 
-                # Look for sentences with occurrence of seeds semantic types (e.g., ORG - LOC)
-                # This was already collect and its stored in: self.processed_tuples
-                #
-                # Measure the similarity of each occurrence with each extraction pattern
-                # and store each pattern that has a similarity higher than a given threshold
-                #
-                # Each candidate tuple will then have a number of patterns that helped generate it,
-                # each with an associated de gree of match. Snowball uses this infor
-                print("\nCollecting instances based on extraction patterns")
-                pattern_best = None
-                for tpl in tqdm(self.processed_tuples):
-                    sim_best = 0
-                    for extraction_pattern in self.patterns:
-                        score = self.similarity(tpl, extraction_pattern)
-                        if score > self.config.threshold_similarity:
-                            extraction_pattern.update_selectivity(tpl, self.config)
-                        if score > sim_best:
-                            sim_best = score
-                            pattern_best = extraction_pattern
+            # Look for sentences with occurrence of seeds semantic types (e.g., ORG - LOC)
+            # This was already collect, and it's stored in: self.processed_tuples
+            #
+            # Measure the similarity of each occurrence with each extraction pattern
+            # and store each pattern that has a similarity higher than a given threshold
+            #
+            # Each candidate tuple will then have a number of patterns that helped generate it,
+            # each with an associated degree of match.
+            print("\nCollecting instances based on extraction patterns")
+            pattern_best = None
+            for processed_tpl in tqdm(self.processed_tuples):
+                sim_best: float = 0.0
+                for extraction_pattern in self.patterns:
+                    score = self.similarity(processed_tpl, extraction_pattern)
+                    if score > self.config.threshold_similarity:
+                        extraction_pattern.update_selectivity(processed_tpl, self.config)
+                    if score > sim_best:
+                        sim_best = score
+                        pattern_best = extraction_pattern
 
-                    if sim_best >= self.config.threshold_similarity:
-                        # if this instance was already extracted, check if it was by this extraction pattern
-                        patterns = self.candidate_tuples[tpl]
-                        if patterns is not None:
-                            if pattern_best not in [x[0] for x in patterns]:
-                                self.candidate_tuples[tpl].append((pattern_best, sim_best))
+                if sim_best >= self.config.threshold_similarity:
+                    # if this instance was already extracted, check if it was by this extraction pattern
+                    patterns = self.candidate_tuples[processed_tpl]
+                    if patterns is not None:
+                        if pattern_best not in [x[0] for x in patterns]:
+                            self.candidate_tuples[processed_tpl].append((pattern_best, sim_best))
 
-                        # if this instance was not extracted before, associate this extraction pattern with the instance
-                        # and the similarity score
-                        else:
-                            self.candidate_tuples[tpl].append((pattern_best, sim_best))
+                    # if this instance was not extracted before, associate this extraction pattern with the instance
+                    # and the similarity score
+                    else:
+                        self.candidate_tuples[processed_tpl].append((pattern_best, sim_best))
 
-                    # update extraction pattern confidence
-                    extraction_pattern.confidence_old = (  # pylint: disable=undefined-loop-variable
-                        extraction_pattern.confidence  # pylint: disable=undefined-loop-variable
-                    )
-                    extraction_pattern.update_confidence()  # pylint: disable=undefined-loop-variable
+                # update extraction pattern confidence
+                extraction_pattern.confidence_old = (  # pylint: disable=undefined-loop-variable
+                    extraction_pattern.confidence  # pylint: disable=undefined-loop-variable
+                )
+                extraction_pattern.update_confidence()  # pylint: disable=undefined-loop-variable
 
-                # normalize patterns confidence find the maximum value of confidence and divide all by the maximum
-                max_confidence = 0
+            # normalize patterns confidence find the maximum value of confidence and divide all by the maximum
+            # ToDo: extract this to a method
+            max_confidence: float = 0.0
+            for pattern in self.patterns:
+                if pattern.confidence > max_confidence:
+                    max_confidence = pattern.confidence
+
+            if max_confidence > 0:
                 for pattern in self.patterns:
-                    if pattern.confidence > max_confidence:
-                        max_confidence = pattern.confidence
+                    pattern.confidence = float(pattern.confidence) / float(max_confidence)
 
-                if max_confidence > 0:
-                    for pattern in self.patterns:
-                        pattern.confidence = float(pattern.confidence) / float(max_confidence)
+            self.debug_patterns()
 
-                self.debug_patterns()
+            # update tuple confidence based on patterns confidence
+            print("\nCalculating tuples confidence")
+            for candidate_tpl in self.candidate_tuples.keys():
+                confidence = 1
+                candidate_tpl.confidence_old = candidate_tpl.confidence
+                for candidate_pattern in self.candidate_tuples.get(candidate_tpl):
+                    confidence *= 1 - (candidate_pattern[0].confidence * candidate_pattern[1])
+                candidate_tpl.confidence = 1 - confidence
 
-                # update tuple confidence based on patterns confidence
-                print("\nCalculating tuples confidence")
-                for tpl in self.candidate_tuples.keys():
-                    confidence = 1
-                    tpl.confidence_old = tpl.confidence
-                    for pattern in self.candidate_tuples.get(tpl):
-                        confidence *= 1 - (pattern[0].confidence * pattern[1])
-                    tpl.confidence = 1 - confidence
+                # use past confidence values to calculate new confidence
+                # if parameter Wupdt < 0.5 the system trusts new examples less on each iteration
+                # which will lead to more conservative patterns and have a damping effect.
+                if i > 0:
+                    candidate_tpl.confidence = (
+                        candidate_tpl.confidence * self.config.w_updt
+                        + candidate_tpl.confidence_old * (1 - self.config.w_updt)
+                    )
 
-                    # use past confidence values to calculate new confidence
-                    # if parameter Wupdt < 0.5 the system trusts new examples less on each iteration
-                    # which will lead to more conservative patterns and have a damping effect.
-                    if i > 0:
-                        tpl.confidence = tpl.confidence * self.config.w_updt + tpl.confidence_old * (
-                            1 - self.config.w_updt
-                        )
+            # update seed set of tuples to use in next iteration
+            # seeds = { T | Conf(T) > min_tuple_confidence }
+            if i + 1 < self.config.number_iterations:
+                print("Adding tuples to seed with confidence =>" + str(self.config.instance_confidence))
+                for seed_tpl in self.candidate_tuples.keys():
+                    if seed_tpl.confidence >= self.config.instance_confidence:
+                        seed = Seed(seed_tpl.ent1, seed_tpl.ent2)
+                        self.config.positive_seeds.add(seed)
 
-                # update seed set of tuples to use in next iteration
-                # seeds = { T | Conf(T) > min_tuple_confidence }
-                if i + 1 < self.config.number_iterations:
-                    print("Adding tuples to seed with confidence =>" + str(self.config.instance_confidence))
-                    for tpl in self.candidate_tuples.keys():
-                        if tpl.confidence >= self.config.instance_confidence:
-                            seed = Seed(tpl.ent1, tpl.ent2)
-                            self.config.positive_seeds.add(seed)
-
-                # increment the number of iterations
-                i += 1
+            # increment the number of iterations
+            i += 1
 
         self.write_relationships_to_disk()

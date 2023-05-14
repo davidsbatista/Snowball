@@ -31,8 +31,8 @@ class Config:
         n_iterations: int,
     ) -> None:  # noqa: C901
         # pylint: disable=too-many-arguments, too-many-statements, too-many-branches
-        self.positive_seeds: Set[SnowballTuple] = set()
-        self.negative_seeds: Set[SnowballTuple] = set()
+        self.positive_seeds: Set[Seed] = set()
+        self.negative_seeds: Set[Seed] = set()
         self.e1_type: str
         self.e2_type: str
         self.stopwords: Set[str] = set(stopwords.words("english"))
