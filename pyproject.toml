@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snowball-extractor"
+version = "1.0.4"
+authors = [{name = "David S. Batista", email = "dsbatista@gmail.com"}]
+description = "Snowball: Extracting Relations from Large Plain-Text Collections"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["nlp", "semantic relationship extraction", "bootstrapping", "emnlp",
+    "tf-idf", ]
+license = {text = "GNU GPLv3"}
+classifiers = [
+    "Topic :: Text Processing :: Linguistic",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "gensim >= 3.7.3",
+    "nltk >= 3.4.1",
+    "numpy >= 1.16.3",
+]
+
+[project.urls]
+homepage = "https://github.com/davidsbatista/Snowball"
+documentation = "https://www.davidsbatista.net/assets/documents/publications/breds-emnlp_15.pdf"
+repository = "https://github.com/davidsbatista/Snowball"
+
+[project.scripts]
+snowball = "snowball.cli:main"
