@@ -29,9 +29,6 @@ class Config:
         confidence: float,
         n_iterations: int,
     ) -> None:  # noqa: C901
-
-        print(config_file, positive_seeds, negative_seeds, sentences_file, similarity, confidence, n_iterations)
-
         # pylint: disable=too-many-arguments, too-many-statements
         if config_file is None:
             self.context_window_size: int = 2

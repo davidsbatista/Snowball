@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "snowball-extractor"
-version = "1.0.2"
+version = "1.0.3"
 authors = [{name = "David S. Batista", email = "dsbatista@gmail.com"}]
 description = "Snowball: Extracting Relations from Large Plain-Text Collections"
 readme = "README.md"
