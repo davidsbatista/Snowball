@@ -1,9 +1,8 @@
 Snowball: Extracting Relations from Large Plain-Text Collections
 ================================================================
 
-This is my own implementation of the Snowball system, which is a relationship extraction system that uses a bootstrapping
-/semi-supervised approach, it relies on an initial set of seeds, i.e. paris of named-entities representing relationship 
-type to be extracted. 
+An implementation of Snowball, a relationship extraction system that uses a bootstrapping/semi-supervised approach, it 
+relies on an initial set of seeds, i.e. paris of named-entities representing relationship type to be extracted. 
 
 ## Extracting companies headquarters:
 
@@ -19,8 +18,8 @@ The tech company <ORG>Soundcloud</ORG> is based in <LOC>Berlin</LOC>, capital of
 <PER>Burton</PER> 's engine passed <ORG>NASCAR</ORG> inspection following the qualifying session.
 ```
 
-We need to give seeds to boostrap the extraction process, specifying the type of each named-entity and 
-relationships examples that should also be present in the input text:
+We need to give seeds to boostrap the extraction process, specifying the type of each named-entity and relationships 
+examples that should also be present in the input text:
 
 ```   
 e1:ORG
