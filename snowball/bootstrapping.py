@@ -253,7 +253,7 @@ class Snowball:
                     # if this instance was already extracted, check if it was by this extraction pattern
                     patterns = self.candidate_tuples[processed_tpl]
                     if patterns is not None and pattern_best not in [x[0] for x in patterns]:
-                        self.candidate_tuples[processed_tpl].append((pattern_best, sim_best))
+                        self.candidate_tuples[processed_tpl].append((pattern_best, sim_best))  # type: ignore
 
                     # if this instance was not extracted before, associate this extraction pattern with the instance
                     # and the similarity score
@@ -271,11 +271,13 @@ class Snowball:
 
             # update tuple confidence based on patterns confidence
             print("\nCalculating tuples confidence")
-            for candidate_tpl in self.candidate_tuples.keys():
+            for candidate_tpl in list(self.candidate_tuples.keys()):
                 confidence: float = 1.0
                 candidate_tpl.confidence_old = candidate_tpl.confidence
-                for candidate_pattern in self.candidate_tuples[candidate_tpl]:
-                    confidence *= 1 - (candidate_pattern[0].confidence * candidate_pattern[1])
+                for candidate_pattern_score in self.candidate_tuples[candidate_tpl]:
+                    pattern = candidate_pattern_score[0]
+                    score = candidate_pattern_score[1]
+                    confidence *= 1 - (pattern.confidence * score)
                 candidate_tpl.confidence = 1 - confidence
 
                 # use past confidence values to calculate new confidence
