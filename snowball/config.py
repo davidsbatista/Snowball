@@ -30,6 +30,22 @@ class Config:
         n_iterations: int,
     ) -> None:  # noqa: C901
         # pylint: disable=too-many-arguments, too-many-statements, too-many-branches
+        if config_file is None:
+            self.context_window_size: int = 2
+            self.min_tokens_away: int = 1
+            self.max_tokens_away: int = 6
+            self.similarity: float = 0.6
+            self.alpha: float = 0.0
+            self.beta: float = 1.0
+            self.gamma: float = 0.0
+            self.min_pattern_support: int = 4
+            self.w_neg: float = 2
+            self.w_unk: float = 0.0
+            self.w_updt: float = 0.5
+            self.use_reverb: bool = True
+            self.use_r_log_f: bool = True
+        else:
+            self.read_config(config_file)
         self.positive_seeds: Set[Seed] = set()
         self.negative_seeds: Set[Seed] = set()
         self.e1_type: str
@@ -39,49 +55,6 @@ class Config:
         self.instance_confidence: float = confidence
         self.reverb: "Reverb" = Reverb()
         self.number_iterations = n_iterations
-
-        for line in fileinput.input(config_file):
-            if line.startswith("#") or len(line) == 1:
-                continue
-
-            if line.startswith("wUpdt"):
-                self.w_updt = float(line.split("=")[1])
-
-            if line.startswith("wUnk"):
-                self.w_unk = float(line.split("=")[1])
-
-            if line.startswith("wNeg"):
-                self.w_neg = float(line.split("=")[1])
-
-            if line.startswith("use_RlogF"):
-                self.use_r_log_f = bool(line.split("=")[1])
-
-            if line.startswith("min_pattern_support"):
-                self.min_pattern_support = int(line.split("=")[1])
-
-            if line.startswith("max_tokens_away"):
-                self.max_tokens_away = int(line.split("=")[1])
-
-            if line.startswith("min_tokens_away"):
-                self.min_tokens_away = int(line.split("=")[1])
-
-            if line.startswith("context_window_size"):
-                self.context_window_size = int(line.split("=")[1])
-
-            if line.startswith("use_reverb"):
-                self.use_reverb = line.split("=")[1].strip()
-
-            if line.startswith("alpha"):
-                self.alpha = float(line.split("=")[1])
-
-            if line.startswith("beta"):
-                self.beta = float(line.split("=")[1])
-
-            if line.startswith("gamma"):
-                self.gamma = float(line.split("=")[1])
-
-        assert self.alpha + self.beta + self.gamma == 1
-
         self.read_seeds(positive_seeds, self.positive_seeds)
         self.read_seeds(negative_seeds, self.negative_seeds)
         fileinput.close()
@@ -137,3 +110,56 @@ class Config:
                 ent2 = line.split(";")[1].strip()
                 seed = Seed(ent1, ent2)
                 holder.add(seed)
+
+    def read_config(self, config_file: str) -> None:  # noqa: C901
+        # pylint: disable=too-many-branches
+        """
+        Reads the configuration file and sets the parameters.
+        """
+
+        for line in fileinput.input(config_file):
+            if line.startswith("#") or len(line) == 1:
+                continue
+
+            if line.startswith("wUpdt"):
+                self.w_updt = float(line.split("=")[1])
+
+            if line.startswith("wUnk"):
+                self.w_unk = float(line.split("=")[1])
+
+            if line.startswith("wNeg"):
+                self.w_neg = float(line.split("=")[1])
+
+            if line.startswith("use_RlogF"):
+                self.use_r_log_f = bool(line.split("=")[1])
+
+            if line.startswith("use_reverb"):
+                self.use_reverb = line.split("=")[1].strip()
+
+            if line.startswith("min_pattern_support"):
+                self.min_pattern_support = int(line.split("=")[1])
+
+            if line.startswith("max_tokens_away"):
+                self.max_tokens_away = int(line.split("=")[1])
+
+            if line.startswith("min_tokens_away"):
+                self.min_tokens_away = int(line.split("=")[1])
+
+            if line.startswith("context_window_size"):
+                self.context_window_size = int(line.split("=")[1])
+
+            if line.startswith("similarity"):
+                self.similarity = float(line.split("=")[1].strip())
+
+            if line.startswith("alpha"):
+                self.alpha = float(line.split("=")[1])
+
+            if line.startswith("beta"):
+                self.beta = float(line.split("=")[1])
+
+            if line.startswith("gamma"):
+                self.gamma = float(line.split("=")[1])
+
+        fileinput.close()
+        if self.alpha + self.beta + self.gamma != 1:
+            raise (ValueError(print("alpha + beta + gamma != 1")))
