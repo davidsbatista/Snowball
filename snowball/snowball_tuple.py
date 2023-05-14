@@ -34,8 +34,8 @@ class SnowballTuple:
         self.ent1 = ent1
         self.ent2 = ent2
         self.sentence = sentence
-        self.confidence = 0
-        self.confidence_old = 0
+        self.confidence: float = 0.0
+        self.confidence_old: float = 0.0
         self.bef_words = before
         self.bet_words = between
         self.aft_words = after

@@ -36,7 +36,6 @@ class Snowball:
         # pylint: disable=too-many-arguments
         self.patterns: List[Pattern] = []
         self.processed_tuples: List[SnowballTuple] = []
-        # self.candidate_tuples: Dict[Any, List[Any]] = defaultdict(list)
         self.candidate_tuples: Dict[SnowballTuple, List[Tuple[Pattern, float]]] = defaultdict(list)
         self.config = Config(
             config_file, seeds_file, negative_seeds, sentences_file, similarity, confidence, n_iterations
@@ -253,9 +252,8 @@ class Snowball:
                 if sim_best >= self.config.threshold_similarity:
                     # if this instance was already extracted, check if it was by this extraction pattern
                     patterns = self.candidate_tuples[processed_tpl]
-                    if patterns is not None:
-                        if pattern_best not in [x[0] for x in patterns]:
-                            self.candidate_tuples[processed_tpl].append((pattern_best, sim_best))
+                    if patterns is not None and pattern_best not in [x[0] for x in patterns]:
+                        self.candidate_tuples[processed_tpl].append((pattern_best, sim_best))
 
                     # if this instance was not extracted before, associate this extraction pattern with the instance
                     # and the similarity score
@@ -274,9 +272,9 @@ class Snowball:
             # update tuple confidence based on patterns confidence
             print("\nCalculating tuples confidence")
             for candidate_tpl in self.candidate_tuples.keys():
-                confidence = 1
+                confidence: float = 1.0
                 candidate_tpl.confidence_old = candidate_tpl.confidence
-                for candidate_pattern in self.candidate_tuples.get(candidate_tpl):
+                for candidate_pattern in self.candidate_tuples[candidate_tpl]:
                     confidence *= 1 - (candidate_pattern[0].confidence * candidate_pattern[1])
                 candidate_tpl.confidence = 1 - confidence
 
