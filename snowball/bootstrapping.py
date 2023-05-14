@@ -1,6 +1,7 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
+import json
 import operator
 import os
 import pickle
@@ -44,18 +45,10 @@ class Snowball:
 
     def write_relationships_to_disk(self) -> None:
         """Write extracted relationships to disk"""
-        # ToDo: write this in JSON format
         print("\nWriting extracted relationships to disk")
-        with open("relationships.txt", "wt", encoding="utf8") as f_output:
-            tmp = sorted(self.candidate_tuples, key=lambda out_tpl: out_tpl.confidence, reverse=True)
-            for tpl in tmp:
-                f_output.write("instance: " + tpl.ent1 + "\t" + tpl.ent2 + "\tscore:" + str(tpl.confidence) + "\n")
-                f_output.write("sentence: " + tpl.sentence + "\n")
-                if tpl.passive_voice is False or tpl.passive_voice is None:
-                    f_output.write("passive voice: False\n")
-                elif tpl.passive_voice is True:
-                    f_output.write("passive voice: True\n")
-                f_output.write("\n")
+        with open("relationships.jsonl", "wt", encoding="utf8") as f_out:
+            for tpl in self.candidate_tuples.keys():
+                f_out.write(json.dumps(tpl.to_json()) + "\n")
 
     def debug_patterns(self) -> None:
         """

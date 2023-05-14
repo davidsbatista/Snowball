@@ -1,7 +1,7 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from snowball.reverb_breds import Reverb
 
@@ -138,3 +138,18 @@ class SnowballTuple:
 
         if len(self.aft_words) > 0:
             self.aft_vector = self.construct_words_vectors(self.aft_words)
+
+    def to_json(self) -> Dict[str, Any]:
+        """
+        Return a JSON representation of the tuple.
+        """
+        return {
+            "entity_1": self.ent1,
+            "entity_2": self.ent2,
+            "confidence": self.confidence,
+            "sentence": self.sentence,
+            "bef_words": self.bef_words,
+            "bet_words": self.bet_words,
+            "aft_words": self.aft_words,
+            "passive_voice": self.passive_voice,
+        }

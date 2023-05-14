@@ -23,7 +23,7 @@ relies on an initial set of seeds, i.e. paris of named-entities representing rel
 
 The input text needs to have the named-entities tagged, like show in the example bellow:
  
-```
+```yaml
 The tech company <ORG>Soundcloud</ORG> is based in <LOC>Berlin</LOC>, capital of Germany.
 <ORG>Pfizer</ORG> says it has hired <ORG>Morgan Stanley</ORG> to conduct the review.
 <ORG>Allianz</ORG>, based in <LOC>Munich</LOC>, said net income rose to EUR 1.32 billion.
@@ -36,7 +36,7 @@ The tech company <ORG>Soundcloud</ORG> is based in <LOC>Berlin</LOC>, capital of
 We need to give seeds to boostrap the extraction process, specifying the type of each named-entity and relationships 
 examples that should also be present in the input text:
 
-```   
+```yaml
 e1:ORG
 e2:LOC
 
@@ -57,13 +57,13 @@ To run a simple example, [download](https://drive.google.com/drive/folders/0B0Cb
 
 Install Snowball using pip
 
-```
+```sh
 pip install snwoball
 ```
 
 Run the following command:
 
-```
+```sh
 snowball --sentences=sentences_short.txt --positive_seeds=seeds_positive.txt --similarity=0.6 --confidence=0.6
 ```
 
@@ -71,7 +71,7 @@ After the  process is terminated an output file `relationships.jsonl` is generat
 
 You can pretty print it's content to the terminal with: `jq '.' < relationships.jsonl`: 
 
-```
+```json
 {
   "entity_1": "Medtronic",
   "entity_2": "Minneapolis",
@@ -110,26 +110,27 @@ You can pretty print it's content to the terminal with: `jq '.' < relationships.
 Snowball has several parameters to tune the extraction process, in the example above it uses the default values, but 
 these can be set in the configuration file: `parameters.cfg`
 
-    max_tokens_away=6           # maximum number of tokens between the two entities
-    min_tokens_away=1           # minimum number of tokens between the two entities
-    context_window_size=2       # number of tokens to the left and right of each entity
+```yaml
+max_tokens_away=6           # maximum number of tokens between the two entities
+min_tokens_away=1           # minimum number of tokens between the two entities
+context_window_size=2       # number of tokens to the left and right of each entity
 
-    alpha=0.2                   # weight of the BEF context in the similarity function
-    beta=0.6                    # weight of the BET context in the similarity function
-    gamma=0.2                   # weight of the AFT context in the similarity function
+alpha=0.2                   # weight of the BEF context in the similarity function
+beta=0.6                    # weight of the BET context in the similarity function
+gamma=0.2                   # weight of the AFT context in the similarity function
 
-    wUpdt=0.5                   # < 0.5 trusts new examples less on each iteration
-    number_iterations=4         # number of bootstrap iterations
-    wUnk=0.1                    # weight given to unknown extracted relationship instances
-    wNeg=2                      # weight given to extracted relationship instances
-    min_pattern_support=2       # minimum number of instances in a cluster to be considered a pattern
-
+wUpdt=0.5                   # < 0.5 trusts new examples less on each iteration
+number_iterations=3         # number of bootstrap iterations
+wUnk=0.1                    # weight given to unknown extracted relationship instances
+wNeg=2                      # weight given to extracted relationship instances
+min_pattern_support=2       # minimum number of instances in a cluster to be considered a pattern
+```
 
 and passed with the argument `--config=parameters.cfg`.
 
 The full command line parameters are:
 
-```
+```sh
   -h, --help            show this help message and exit
   --config CONFIG       file with bootstrapping configuration parameters
   --sentences SENTENCES
@@ -187,7 +188,7 @@ an issue first. You can expect a reply within a few days, but please be patient 
 Make sure you have Python3.9 installed on your system
 
 macOs
-```
+```sh
 brew install python@3.9
 python3.9 -m pip install --user --upgrade pip
 python3.9 -m pip install virtualenv
