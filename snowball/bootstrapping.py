@@ -34,6 +34,7 @@ class Snowball:
         n_iterations: int,
     ):
         # pylint: disable=too-many-arguments
+        self.current_iteration: int = 0
         self.patterns: List[Pattern] = []
         self.processed_tuples: List[SnowballTuple] = []
         self.candidate_tuples: Dict[SnowballTuple, List[Tuple[Pattern, float]]] = defaultdict(list)
@@ -188,6 +189,18 @@ class Snowball:
             with open("processed_tuples.pkl", "wb") as f_out:
                 pickle.dump(self.processed_tuples, f_out)
 
+    def _update_seeds(self) -> None:
+        """
+        Update seed set of tuples to use in next iteration:
+            seeds = { T | Conf(T) > min_tuple_confidence }
+        """
+        if self.current_iteration + 1 < self.config.number_iterations:
+            print("Adding tuples to seed with confidence =>" + str(self.config.instance_confidence))
+            for seed_tpl in self.candidate_tuples.keys():
+                if seed_tpl.confidence >= self.config.instance_confidence:
+                    seed = Seed(seed_tpl.ent1, seed_tpl.ent2)
+                    self.config.positive_seeds.add(seed)
+
     def init_bootstrap(self, tuples: Optional[str]) -> None:  # noqa: C901
         # pylint: disable=too-many-locals, too-many-branches, too-many-statements
         """
@@ -199,10 +212,9 @@ class Snowball:
                 self.processed_tuples = pickle.load(f_in)
                 print(len(self.processed_tuples), "tuples loaded")
 
-        i = 0
-        while i <= self.config.number_iterations:
+        while self.current_iteration <= self.config.number_iterations:
             print("\n=============================================")
-            print("\nStarting iteration", i)
+            print("\nStarting iteration", self.current_iteration)
             print("\nLooking for seed matches of:")
             for seed in self.config.positive_seeds:
                 print(f"{seed.ent1}\t{seed.ent2}")
@@ -223,7 +235,7 @@ class Snowball:
             # eliminate patterns supported by less than 'min_pattern_support' tuples
             self.patterns = [p for p in self.patterns if len(p.tuples) >= self.config.min_pattern_support]
             print("\n", len(self.patterns), "patterns generated")
-            if i == 0 and len(self.patterns) == 0:
+            if self.current_iteration == 0 and len(self.patterns) == 0:
                 print("No patterns generated")
                 sys.exit(0)
 
@@ -283,21 +295,15 @@ class Snowball:
                 # use past confidence values to calculate new confidence
                 # if parameter Wupdt < 0.5 the system trusts new examples less on each iteration
                 # which will lead to more conservative patterns and have a damping effect.
-                if i > 0:
+                if self.current_iteration > 0:
                     candidate_tpl.confidence = (
                         candidate_tpl.confidence * self.config.w_updt
                         + candidate_tpl.confidence_old * (1 - self.config.w_updt)
                     )
 
-            # update seed set of tuples to use in next iteration: seeds = { T | Conf(T) > min_tuple_confidence }
-            if i + 1 < self.config.number_iterations:
-                print("Adding tuples to seed with confidence =>" + str(self.config.instance_confidence))
-                for seed_tpl in self.candidate_tuples.keys():
-                    if seed_tpl.confidence >= self.config.instance_confidence:
-                        seed = Seed(seed_tpl.ent1, seed_tpl.ent2)
-                        self.config.positive_seeds.add(seed)
+            self._update_seeds()
 
             # increment the number of iterations
-            i += 1
+            self.current_iteration += 1
 
         self.write_relationships_to_disk()
