@@ -1,17 +1,16 @@
 __author__ = "David S. Batista"
 __email__ = "dsbatista@gmail.com"
 
-import re
 
 from gensim import corpora
 from gensim.models import TfidfModel
 from nltk import word_tokenize
 from tqdm import tqdm
 
-from snowball.commons import blocks
+from snowball.commons import blocks, clean_tags
 
 
-class VectorSpaceModel:
+class VectorSpaceModel:  # pragma: no cover
     # pylint: disable=too-few-public-methods
     """
     Vector Space Model class
@@ -28,7 +27,7 @@ class VectorSpaceModel:
         with open(sentences_file, "rt", encoding="utf8") as f_sentences:
             documents = []
             for sentence in tqdm(f_sentences, total=total):
-                sentence_clean = re.sub("<[A-Z]+>[^<]+</[A-Z]+>", "", sentence)
+                sentence_clean = clean_tags(sentence)
                 document = [word for word in word_tokenize(sentence_clean.lower()) if word not in stopwords]
                 documents.append(document)
 
