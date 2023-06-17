@@ -33,7 +33,7 @@ The tech company <ORG>Soundcloud</ORG> is based in <LOC>Berlin</LOC>, capital of
 <PER>Burton</PER> 's engine passed <ORG>NASCAR</ORG> inspection following the qualifying session.
 ```
 
-We need to give seeds to boostrap the extraction process, specifying the type of each named-entity and relationships 
+We need to give seeds to bootstrap the extraction process, specifying the type of each named-entity and relationships 
 examples that should also be present in the input text:
 
 ```yaml
@@ -58,13 +58,13 @@ To run a simple example, [download](https://drive.google.com/drive/folders/0B0Cb
 Install Snowball using pip
 
 ```sh
-pip install snwoball
+pip install snowball-extractor
 ```
 
 Run the following command:
 
 ```sh
-snowball --sentences=sentences_short.txt --positive_seeds=seeds_positive.txt --similarity=0.6 --confidence=0.6
+snowball-extractor --sentences=sentences_short.txt --positive_seeds=seeds_positive.txt --similarity=0.6 --confidence=0.6
 ```
 
 After the  process is terminated an output file `relationships.jsonl` is generated containing the extracted  relationships. 
