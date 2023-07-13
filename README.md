@@ -64,7 +64,7 @@ pip install snowball-extractor
 Run the following command:
 
 ```sh
-snowball-extractor --sentences=sentences_short.txt --positive_seeds=seeds_positive.txt --similarity=0.6 --confidence=0.6
+snowball --sentences=sentences_short.txt --positive_seeds=seeds_positive.txt --similarity=0.6 --confidence=0.6
 ```
 
 After the  process is terminated an output file `relationships.jsonl` is generated containing the extracted  relationships. 
