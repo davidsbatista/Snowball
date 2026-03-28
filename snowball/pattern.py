@@ -52,7 +52,7 @@ class Pattern:
             self.confidence = log(float(self.positive), 2) * (
                 float(self.positive) / float(self.positive + self.unknown * config.w_unk + self.negative * config.w_neg)
             )
-        elif self.positive == 0:
+        elif not self.positive:
             self.confidence = 0
 
     def update_confidence(self) -> None:

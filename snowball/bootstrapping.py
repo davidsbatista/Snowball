@@ -90,7 +90,7 @@ class Snowball:
         """
         start = 0
         # initialize: if no patterns exist, first tuple goes to first cluster
-        if len(self.patterns) == 0:
+        if not self.patterns:
             self.patterns.append(Pattern(matched_tuples[0]))
             start = 1
 
@@ -122,8 +122,7 @@ class Snowball:
         """
         max_confidence: float = 0.0
         for pattern in self.patterns:
-            if pattern.confidence > max_confidence:
-                max_confidence = pattern.confidence
+            max_confidence = max(max_confidence, pattern.confidence)
         if max_confidence > 0:
             for pattern in self.patterns:
                 pattern.confidence = float(pattern.confidence) / float(max_confidence)
@@ -214,7 +213,7 @@ class Snowball:
 
             count_matches, matched_tuples = self.match_seeds_tuples()
 
-            if len(matched_tuples) == 0:
+            if not matched_tuples:
                 print("\nNo seed matches found")
                 sys.exit(0)
 
@@ -228,7 +227,7 @@ class Snowball:
             # eliminate patterns supported by less than 'min_pattern_support' tuples
             self.patterns = [p for p in self.patterns if len(p.tuples) >= self.config.min_pattern_support]
             print("\n", len(self.patterns), "patterns generated")
-            if self.current_iteration == 0 and len(self.patterns) == 0:
+            if not self.current_iteration and not self.patterns:
                 print("No patterns generated")
                 sys.exit(0)
 
