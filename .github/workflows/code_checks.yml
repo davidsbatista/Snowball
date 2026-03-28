@@ -34,9 +34,10 @@ jobs:
         mkdir -p coverage
 
     - name: Coverage Badge
-      uses: tj-actions/coverage-badge-py@v1.8
-      with:
-        output: coverage/coverage.svg
+      run: |
+        pip install genbadge[coverage]
+        coverage xml
+        genbadge coverage -i coverage.xml -o coverage/coverage.svg
 
     - name: Publish coverage report to coverage-badge branch
       uses: JamesIves/github-pages-deploy-action@v4
