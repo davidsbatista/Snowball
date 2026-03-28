@@ -7,7 +7,7 @@ from snowball.reverb_breds import Reverb
 
 
 class SnowballTuple:
-    # pylint: disable=too-many-instance-attributes, too-many-arguments
+    # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
     """
     Tuple class:
 
