@@ -70,7 +70,7 @@ class Snowball:
         """
         Calculate the similarity between a tuple and an extraction pattern
         """
-        (bef, bet, aft) = (0, 0, 0)
+        bef, bet, aft = (0, 0, 0)
 
         if tpl.bef_vector is not None and extraction_pattern.centroid_bef is not None:
             bef = cossim(tpl.bef_vector, extraction_pattern.centroid_bef)
