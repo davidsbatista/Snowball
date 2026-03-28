@@ -29,7 +29,7 @@ class Config:
         confidence: float,
         n_iterations: int,
     ) -> None:  # noqa: C901
-        # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-statements
+        # pylint: disable=too-many-arguments, too-many-statements
         if config_file is None:
             self.context_window_size: int = 2
             self.min_tokens_away: int = 1

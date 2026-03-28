@@ -55,7 +55,7 @@ class Entity:
         return self.string == other.string and self.type == other.type
 
 
-class Relationship:  # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-instance-attributes, too-few-public-methods
+class Relationship:  # pylint: disable=too-many-arguments, too-many-instance-attributes, too-few-public-methods
     """Relationship class to hold information about a relationship extracted from a sentence."""
 
     def __init__(
@@ -91,7 +91,7 @@ class Relationship:  # pylint: disable=too-many-arguments, too-many-positional-a
         )
 
 
-class Sentence:  # pylint: disable=too-few-public-methods, too-many-locals, too-many-arguments, too-many-positional-arguments
+class Sentence:  # pylint: disable=too-few-public-methods, too-many-locals, too-many-arguments
     """Holds information about a sentence extracted from a document."""
 
     def __init__(
