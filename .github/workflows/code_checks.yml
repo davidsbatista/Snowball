@@ -1,5 +1,5 @@
 name: CI Code Checks
-on: [pull_request]
+on: [pull_request, workflow_dispatch]
 jobs:
   build:
     name: code checks
