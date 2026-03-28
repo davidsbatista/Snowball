@@ -4,44 +4,37 @@ jobs:
   build:
     name: code checks
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10"]
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
-        python -m nltk.downloader stopwords
+        uv sync --extra dev
+        uv run python -m nltk.downloader stopwords
 
     - name: Checking formatting and linting with ruff
-      run: make lint
+      run: uv run make lint
 
     - name: Type checking with mypy
-      run: make typing
+      run: uv run make typing
 
     - name: Running tests
-      run: make test
+      run: uv run make test
 
     - name: Creating coverage folder
-      run: |
-        mkdir -p coverage
+      run: mkdir -p coverage
 
     - name: Coverage Badge
       run: |
-        pip install genbadge[coverage]
-        coverage xml
-        genbadge coverage -i coverage.xml -o coverage/coverage.svg
+        uv run pip install genbadge[coverage]
+        uv run coverage xml
+        uv run genbadge coverage -i coverage.xml -o coverage/coverage.svg
 
     - name: Publish coverage report to coverage-badge branch
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: coverage-badge
         folder: coverage
-
