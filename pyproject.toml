@@ -57,6 +57,9 @@ ignore = [
     "E203",     # whitespace before ':' (formatter compatible)
     "PLW0603",  # global-statement
     "PLR0917",  # too-many-positional-arguments
+    "PLR0913",  # too-many-arguments
+    "PLR0912",  # too-many-branches
+    "PLR0915",  # too-many-statements
 ]
 
 [tool.ruff.lint.per-file-ignores]

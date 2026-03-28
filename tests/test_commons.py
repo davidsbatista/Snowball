@@ -18,4 +18,4 @@ def tmp_file():
 def test_blocks(tmp_file):
     """Test that the blocks function returns the correct number of lines"""
     with open(tmp_file, "rb") as f_in:
-        assert sum(bl.count(b"\n") for bl in blocks(f_in)) == 100
+        assert sum(bl.count(b"\n") for bl in blocks(f_in)) == 100  # noqa: PLR2004

@@ -109,7 +109,8 @@ class Sentence:  # pylint: disable=too-few-public-methods, too-many-locals, too-
         self.entities_regex = re.compile("<[A-Z]+>[^<]+</[A-Z]+>", re.U)
         entities = list(re.finditer(self.entities_regex, sentence))
 
-        if len(entities) >= 2:
+        min_entities = 2
+        if len(entities) >= min_entities:
             sentence_no_tags = re.sub(regex_clean_tags, "", sentence)  # clean tags from text
             text_tokens = word_tokenize(sentence_no_tags)
 
