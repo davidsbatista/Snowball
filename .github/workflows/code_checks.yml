@@ -17,14 +17,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements_dev.txt
+        pip install -e ".[dev]"
         python -m nltk.downloader stopwords
 
-    - name: Checking formatting and analysing the code with pylint and flake8
+    - name: Checking formatting and linting with ruff
       run: make lint
 
     - name: Type checking with mypy
-      run: mypy --config mypy.ini -p snowball
+      run: make typing
 
     - name: Running tests
       run: make test

@@ -20,6 +20,15 @@ dependencies = [
     "gensim >= 3.7.3",
     "nltk >= 3.4.1",
     "numpy >= 1.16.3",
+    "tqdm >= 4.66.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "coverage==7.2.5",
+    "mypy==1.3.0",
+    "pytest==7.3.1",
+    "ruff==0.4.4",
 ]
 
 [project.urls]
@@ -29,3 +38,54 @@ repository = "https://github.com/davidsbatista/Snowball"
 
 [project.scripts]
 snowball = "snowball.cli:main"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = [".git", "__pycache__", "build", "dist", ".tox", "automatic_evaluation"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "C90",  # mccabe complexity
+    "PL",   # pylint
+    "I",    # isort
+]
+ignore = [
+    "E203",     # whitespace before ':' (formatter compatible)
+    "PLW0603",  # global-statement
+    "PLR0917",  # too-many-positional-arguments
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*/__init__.py" = ["F401"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["snowball"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+disallow_any_unimported = true
+disallow_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[tool.coverage.run]
+source = ["snowball"]
+omit = ["*__init__*", "snowball/cli.py"]
+
+[tool.coverage.report]
+show_missing = true
+precision = 2
+sort = "Miss"
