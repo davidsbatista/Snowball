@@ -57,7 +57,7 @@ def test_relationship():
     e1_type = "ORG"
     e2_type = "LOC"
     rel1 = Relationship(sentence, before, between, after, ent1_str, ent2_str, e1_type, e2_type)
-    assert rel1 == rel1
+    assert rel1 == rel1  # noqa: PLR0124 — testing __eq__ reflexivity
 
     rel2 = Relationship(sentence, before, between, after, ent1_str, ent2_str, "LOC", "LOC")
     assert not rel1 == rel2

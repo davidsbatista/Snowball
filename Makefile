@@ -1,19 +1,17 @@
 .PHONY:	test lint virtualenv dist
 
 lint:
-	black -t py39 -l 120 snowball tests
-	isort --profile black snowball tests
-	PYTHONPATH=. pylint --rcfile=pylint.cfg snowball
-	PYTHONPATH=. flake8 --config=setup.cfg snowball
+	ruff format snowball tests
+	ruff check --fix snowball tests
 
 
 typing:
-	mypy --config mypy.ini -p snowball
+	mypy -p snowball
 
 
 test:
-	PYTHONPATH=. coverage run --rcfile=setup.cfg --source=./snowball -m pytest
-	PYTHONPATH=. coverage report --rcfile=setup.cfg
+	PYTHONPATH=. coverage run --source=./snowball -m pytest
+	PYTHONPATH=. coverage report
 
 
 clean:

@@ -288,7 +288,10 @@ class Reverb:
         # (to be) + (adj|adv) + past_verb + by
         # to be + past verb + by
 
-        if len(pattern) >= 3:
+        min_pattern_length = 3
+        min_short_pattern_length = 2
+
+        if len(pattern) >= min_pattern_length:
             if pattern[0][1].startswith("V"):
                 verb = self.lmtzr.lemmatize(pattern[0][0], "v")
                 if verb in self.aux_verbs:
@@ -304,7 +307,7 @@ class Reverb:
                     passive_voice = True
 
         # past verb + by
-        elif len(pattern) >= 2:
+        elif len(pattern) >= min_short_pattern_length:
             if (pattern[-2][1] == "VBN" or pattern[-2][1] == "VBD") and pattern[-1][0] == "by":
                 passive_voice = True
 
