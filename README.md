@@ -212,7 +212,6 @@ Snowball runs a continuous integration (CI) on all pull requests. This means tha
 full  test suite is run on your PR: 
 
 - The code is formatted using `black` and `isort` 
-- Unused imports are auto-removed using `pycln`
 - Linting is done using `pyling` and `flake8`
 - Type checking is done using `mypy`
 - Tests are run using `pytest`

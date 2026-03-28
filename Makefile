@@ -2,7 +2,6 @@
 
 lint:
 	black -t py39 -l 120 snowball tests
-	pycln -a snowball tests
 	isort --profile black snowball tests
 	PYTHONPATH=. pylint --rcfile=pylint.cfg snowball
 	PYTHONPATH=. flake8 --config=setup.cfg snowball
