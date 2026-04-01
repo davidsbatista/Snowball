@@ -44,6 +44,8 @@ class Pattern:
             return False
         return set(self.tuples) == set(other.tuples)
 
+    __hash__ = None  # type: ignore[assignment]
+
     def update_confidence_2003(self, config: "Config") -> None:
         """
         Update the confidence of the pattern

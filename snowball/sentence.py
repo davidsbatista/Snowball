@@ -90,6 +90,8 @@ class Relationship:  # pylint: disable=too-many-arguments, too-many-instance-att
             and self.e2_type == other.e2_type
         )
 
+    __hash__ = None  # type: ignore[assignment]
+
 
 class Sentence:  # pylint: disable=too-few-public-methods, too-many-locals, too-many-arguments
     """Holds information about a sentence extracted from a document."""
