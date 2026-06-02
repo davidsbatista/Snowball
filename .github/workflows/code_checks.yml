@@ -1,5 +1,15 @@
 name: CI Code Checks
-on: [pull_request, workflow_dispatch]
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
 jobs:
   build:
     name: code checks
@@ -28,12 +38,14 @@ jobs:
       run: mkdir -p coverage
 
     - name: Coverage Badge
+      if: github.event_name != 'pull_request'
       run: |
         uv run pip install genbadge[coverage]
         uv run coverage xml
         uv run genbadge coverage -i coverage.xml -o coverage/coverage.svg
 
     - name: Publish coverage report to coverage-badge branch
+      if: github.event_name != 'pull_request'
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: coverage-badge
